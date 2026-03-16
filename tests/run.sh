@@ -1,7 +1,8 @@
-
+# Manual hardware integration tests — requires real GPIO (/dev/gpiochip2)
+# and SPI (/dev/spidev*) devices. Not run in CI.
 set -e
 
-gcc -o spidev spidev.cpp
-gcc -o gpio gpio.cpp
-sudo ./spidev
-# sudo ./gpio
+g++ -o spidev spidev.cpp
+g++ -o gpio gpio.cpp
+./spidev
+./gpio

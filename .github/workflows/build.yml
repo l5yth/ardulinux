@@ -1,0 +1,100 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/build.yml"
+      - "cores/**"
+      - "CMakeLists.txt"
+      - "example/**"
+      - "tests/**"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/build.yml"
+      - "cores/**"
+      - "CMakeLists.txt"
+      - "example/**"
+      - "tests/**"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y cmake libgpiod-dev libi2c-dev pkg-config
+
+      - name: Configure
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      - name: Smoke test
+        run: ./build/ArduLinux --help
+
+  test:
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Cache Catch2
+        uses: actions/cache@v4
+        with:
+          path: build-coverage/_deps
+          key: catch2-v3.7.1-nocover
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y cmake libgpiod-dev libi2c-dev pkg-config lcov
+
+      - name: Configure (Coverage)
+        run: cmake -B build-coverage -DCMAKE_BUILD_TYPE=Coverage
+
+      - name: Build
+        run: cmake --build build-coverage --parallel
+
+      - name: Run tests
+        run: ctest --test-dir build-coverage --output-on-failure
+
+      - name: Generate coverage report
+        run: |
+          # --no-external: skip system headers (/usr/include etc.)
+          # --ignore-errors source: don't abort if a compiled-out source file
+          #   is missing (e.g. stale _deps objects in a warm cache)
+          lcov --capture \
+               --directory build-coverage \
+               --base-directory . \
+               --no-external \
+               --ignore-errors source \
+               --output-file coverage.info
+          # Drop any _deps coverage that slipped through (e.g. cache hit with
+          # old instrumented Catch2 objects)
+          lcov --remove coverage.info '*/build-coverage/_deps/*' \
+               --ignore-errors inconsistent \
+               --output-file coverage.info
+          lcov --list coverage.info
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: coverage.info
+          token: ${{ secrets.CODECOV_TOKEN }}

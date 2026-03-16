@@ -40,6 +40,10 @@ std::vector<std::unique_ptr<GPIOPinIf>> pins;
 GPIOPinIf::~GPIOPinIf() {}
 
 /** By default we assign simulated GPIOs to all pins, later applications can customize this in ardulinuxSetup */
+// FIXME: gpioInit() appends to pins rather than resetting it, so calling it
+// more than once in the same process grows the vector unboundedly. Pins
+// created by earlier calls remain at their original indices and are not
+// replaced. Reset pins.clear() / NUM_GPIOS before push_back to fix.
 void gpioInit(int _num_gpios) {
   NUM_GPIOS = _num_gpios;
   for(size_t i = 0; i < NUM_GPIOS; i++)
