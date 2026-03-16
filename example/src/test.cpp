@@ -11,7 +11,7 @@ static SPISettings spiSettings(4000000, MSBFIRST, SPI_MODE0);
 void setup(void) {
     Serial.begin(115200);
 
-    Serial.println("Starting Portduino test");
+    Serial.println("Starting ArduLinux test");
 
     pinMode(TEST_PIN, OUTPUT);
     digitalWrite(TEST_PIN, LOW);

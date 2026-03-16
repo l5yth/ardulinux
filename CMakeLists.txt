@@ -1,66 +1,69 @@
 cmake_minimum_required(VERSION 3.17)
-project(Portduino)
+project(ArduLinux)
 
 set(CMAKE_CXX_STANDARD 14)
 
-include_directories(cores/arduino/api)
-include_directories(cores/portduino)
-include_directories(cores/portduino/FS)
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(LIBGPIOD libgpiod)
 
-add_executable(Portduino
-        cores/arduino/api/deprecated/Client.h
-        cores/arduino/api/deprecated/HardwareSerial.h
-        cores/arduino/api/deprecated/IPAddress.h
-        cores/arduino/api/deprecated/Print.h
-        cores/arduino/api/deprecated/Printable.h
-        cores/arduino/api/deprecated/Server.h
-        cores/arduino/api/deprecated/Stream.h
-        cores/arduino/api/deprecated/Udp.h
-        cores/arduino/api/deprecated/WString.h
-        cores/arduino/api/deprecated-avr-comp/avr/dtostrf.h
-        cores/arduino/api/deprecated-avr-comp/avr/interrupt.h
-        cores/arduino/api/deprecated-avr-comp/avr/pgmspace.h
-        cores/arduino/api/ArduinoAPI.h
-        cores/arduino/api/Binary.h
-        cores/arduino/api/Client.h
+include_directories(cores/arduino/api)
+include_directories(cores/ardulinux)
+include_directories(cores/ardulinux/FS)
+
+add_executable(ArduLinux
+        # ArduinoCore-API
         cores/arduino/api/Common.cpp
-        cores/arduino/api/Common.h
-        cores/arduino/api/Compat.h
-        cores/arduino/api/HardwareI2C.h
-        cores/arduino/api/HardwareSerial.h
-        cores/arduino/api/HardwareSPI.h
-        cores/arduino/api/Interrupts.h
         cores/arduino/api/IPAddress.cpp
-        cores/arduino/api/IPAddress.h
-        cores/arduino/api/itoa.h
-        # cores/arduino/api/PluggableUSB.cpp
-        # cores/arduino/api/PluggableUSB.h
         cores/arduino/api/Print.cpp
-        cores/arduino/api/Print.h
-        cores/arduino/api/Printable.h
-        cores/arduino/api/RingBuffer.h
-        cores/arduino/api/Server.h
         cores/arduino/api/Stream.cpp
-        cores/arduino/api/Stream.h
         cores/arduino/api/String.cpp
-        cores/arduino/api/String.h
-        cores/arduino/api/Udp.h
-        cores/arduino/api/USBAPI.h
-        cores/arduino/api/WCharacter.h
-        cores/portduino/Arduino.h
-        cores/portduino/itoa.cpp
-        cores/portduino/dtostrf.c
-        cores/portduino/main.cpp
-        cores/portduino/linux/millis.cpp
-        cores/portduino/simulated/SimCommon.cpp
-        cores/portduino/Utility.cpp
-        cores/portduino/Utility.h
-        cores/portduino/simulated/SimHardwareSPI.cpp
-        example/test.cpp
-       	cores/portduino/simulated/SimHardwareI2C.cpp
-       	cores/portduino/simulated/SimHardwareI2C.h
-       	cores/portduino/linux/LinuxCommon.cpp
-       	cores/portduino/linux/LinuxSerial.cpp
-        cores/portduino/linux/LinuxSerial.h
-        cores/portduino/linux/LinuxHardwareI2C.cpp
-       	cores/portduino/linux/LinuxHardwareI2C.h)
+)
+
+# ArduinoCore-API's Common.h re-declares atexit() without noexcept, which conflicts
+# with glibc's noexcept declaration on GCC 15+. Defining HOST suppresses that
+# declaration (guarded by #ifndef HOST) since we are a host machine build.
+# Applied globally because Common.h is included transitively by all ardulinux files.
+target_compile_definitions(ArduLinux PRIVATE HOST)
+
+target_sources(ArduLinux PRIVATE
+
+        # ArduLinux core
+        cores/ardulinux/HardwareSPIStubs.cpp
+        cores/ardulinux/itoa.cpp
+        cores/ardulinux/dtostrf.c
+        cores/ardulinux/logging.cpp
+        cores/ardulinux/Utility.cpp
+        cores/ardulinux/ArduLinuxGPIO.cpp
+        cores/ardulinux/main.cpp
+        cores/ardulinux/main_entry.cpp
+
+        # Virtual filesystem
+        cores/ardulinux/FS/ArduLinuxFS.cpp
+        cores/ardulinux/FS/FS.cpp
+        cores/ardulinux/FS/vfs_api.cpp
+
+        # Linux platform (always compiled; provide delay, SPI, Serial, etc.)
+        cores/ardulinux/linux/millis.cpp
+        cores/ardulinux/linux/LinuxCommon.cpp
+        cores/ardulinux/linux/LinuxSerial.cpp
+        cores/ardulinux/linux/LinuxHardwareSPI.cpp
+        cores/ardulinux/simulated/SimCommon.cpp
+        cores/ardulinux/simulated/SimHardwareSPI.cpp
+
+        # Example application
+        example/src/test.cpp
+)
+
+if(LIBGPIOD_FOUND)
+    message(STATUS "libgpiod found (${LIBGPIOD_VERSION}) -- enabling Linux hardware GPIO and I2C")
+    target_sources(ArduLinux PRIVATE
+            cores/ardulinux/linux/gpio/LinuxGPIOPin.cpp
+            cores/ardulinux/linux/LinuxHardwareI2C.cpp)
+    target_compile_definitions(ArduLinux PRIVATE ARDULINUX_LINUX_HARDWARE)
+    target_include_directories(ArduLinux PRIVATE ${LIBGPIOD_INCLUDE_DIRS})
+    target_link_libraries(ArduLinux PRIVATE ${LIBGPIOD_LIBRARIES} i2c)
+else()
+    message(STATUS "libgpiod not found -- building with simulated GPIO and I2C only")
+    target_sources(ArduLinux PRIVATE
+            cores/ardulinux/simulated/SimHardwareI2C.cpp)
+endif()
