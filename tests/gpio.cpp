@@ -6,6 +6,9 @@
 #include <unistd.h>
 #include <errno.h>
 
+// NOTE: Uses the legacy gpiohandle API (GPIO_GET_LINEHANDLE_IOCTL) deprecated
+// in Linux 5.10. May not work on newer kernels — use libgpiod or the gpio-v2
+// ABI (GPIO_V2_GET_LINE_IOCTL) instead.
 #include <linux/gpio.h>
 
 

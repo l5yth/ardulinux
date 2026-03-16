@@ -1,7 +1,6 @@
-
 set -e
 
-gcc -o spidev spidev.cpp
-gcc -o gpio gpio.cpp
-sudo ./spidev
-# sudo ./gpio
+g++ -o spidev spidev.cpp
+g++ -o gpio gpio.cpp
+./spidev
+./gpio
