@@ -2,6 +2,14 @@
 
 ArduLinux is a continuation of [portduino](https://github.com/geeksville/framework-portduino) and implements the Arduino API as a Linux user-space library, allowing firmware written for embedded targets (nRF52, ESP32, AVR, etc.) to build and run on Linux without modification. Applications get access to real hardware - GPIO via libgpiod, SPI via spidev, I2C via i2c-dev, Serial via POSIX file descriptors - or fully simulated devices for CI and development.
 
+## Differences from portduino
+
+ArduLinux is a clean-room continuation, not a fork. The key differences:
+
+- **No vendored dependencies** — [ArduinoCore-API](https://github.com/arduino/ArduinoCore-API) and [WiFi](https://github.com/arduino-libraries/WiFi) are upstream git submodules, not copied or patched source trees. Updates are a `git submodule update` away.
+- **PlatformIO via upstream platform-native** — no custom platform registry entry or private package mirror required.
+- **Smaller surface area** — dead code, unused variants, and IDE project files removed. What remains is what runs.
+
 ## Requirements
 
 - GCC or Clang with C++14 support
