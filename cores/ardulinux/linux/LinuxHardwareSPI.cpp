@@ -24,7 +24,7 @@
 
 #include <assert.h>
 
-#ifdef ARDULINUX_LINUX_HARDWARE
+#ifdef ARDULINUX_HARDWARE
 
 #include "linux/PosixFile.h"
 #include <linux/spi/spidev.h>
@@ -80,7 +80,7 @@ class LinuxSPIChip : public SPIChip, private PosixFile {
 
 static std::map<std::string, std::shared_ptr<void>> SPI_map;
 
-#endif // ARDULINUX_LINUX_HARDWARE
+#endif // ARDULINUX_HARDWARE
 
 namespace arduino {
 
@@ -147,7 +147,7 @@ void LinuxHardwareSPI::begin() {
 
 void LinuxHardwareSPI::begin(uint32_t freq) {
   if (!spiChip) {
-#ifdef ARDULINUX_LINUX_HARDWARE
+#ifdef ARDULINUX_HARDWARE
     if (SPI_map[spiString] != nullptr) {
       spiChip = std::static_pointer_cast<SPIChip>(SPI_map[spiString]);
     } else {

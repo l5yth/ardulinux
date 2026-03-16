@@ -22,10 +22,16 @@ except FileNotFoundError:
     has_libgpiod = False
 
 cppdefines = ["HOST"]
-cpppath    = [API_DIR, ARDULINUX_DIR, join(ARDULINUX_DIR, "FS")]
+cpppath    = [
+    API_DIR,
+    ARDULINUX_DIR,
+    join(ARDULINUX_DIR, "FS"),
+    join(PLATFORM_DIR, "libraries", "Wire", "src"),
+    join(PLATFORM_DIR, "libraries", "SPI", "src"),
+]
 
 if has_libgpiod:
-    cppdefines.append("ARDULINUX_LINUX_HARDWARE")
+    cppdefines.append("ARDULINUX_HARDWARE")
     raw = subprocess.check_output(["pkg-config", "--cflags", "libgpiod"]).decode().split()
     cpppath += [f[2:] for f in raw if f.startswith("-I")]
 

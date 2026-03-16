@@ -36,7 +36,7 @@
 
 #include "linux/LinuxHardwareSPI.h"
 #include "linux/LinuxSerial.h"
-#ifdef ARDULINUX_LINUX_HARDWARE
+#ifdef ARDULINUX_HARDWARE
 #include "linux/LinuxHardwareI2C.h"
 #else
 #include "simulated/SimHardwareI2C.h"

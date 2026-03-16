@@ -68,7 +68,7 @@ endif()
 
 if(LIBGPIOD_FOUND)
     message(STATUS "libgpiod found (${LIBGPIOD_VERSION}) -- enabling Linux hardware GPIO and I2C")
-    target_compile_definitions(ardulinux-base PUBLIC ARDULINUX_LINUX_HARDWARE)
+    target_compile_definitions(ardulinux-base PUBLIC ARDULINUX_HARDWARE)
     target_include_directories(ardulinux-base PUBLIC ${LIBGPIOD_INCLUDE_DIRS})
     target_link_libraries(ardulinux-base PUBLIC ${LIBGPIOD_LIBRARIES} i2c)
 else()
