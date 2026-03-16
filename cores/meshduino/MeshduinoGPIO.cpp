@@ -6,7 +6,7 @@
 #include "Utility.h"
 #include "logging.h"
 #include "Arduino.h"
-#include "PortduinoGPIO.h"
+#include "MeshduinoGPIO.h"
 #include "gpiod.h"
 
 #include <assert.h>
@@ -23,7 +23,7 @@ std::vector<std::unique_ptr<GPIOPinIf>> pins;
 
 GPIOPinIf::~GPIOPinIf() {}
 
-/** By default we assign simulated GPIOs to all pins, later applications can customize this in portduinoSetup */
+/** By default we assign simulated GPIOs to all pins, later applications can customize this in meshduinoSetup */
 void gpioInit(int _num_gpios) {
   NUM_GPIOS = _num_gpios;
   for(size_t i = 0; i < NUM_GPIOS; i++)

@@ -2,8 +2,8 @@
 // Created by kevinh on 9/1/20.
 //
 
-#ifndef PORTDUINO_UTILITY_H
-#define PORTDUINO_UTILITY_H
+#ifndef MESHDUINO_UTILITY_H
+#define MESHDUINO_UTILITY_H
 
 #include <stdexcept>
 #include <string>
@@ -30,13 +30,13 @@ void notImplemented(const char *msg);
  * Normally arduino apps don't use exceptions.  If exceptions are allowed an exception will be thrown, otherwise an error message will be printed
  * and the function will return.
  */
-[[noreturn]] void portduinoError(const char *msg, ...);
+[[noreturn]] void meshduinoError(const char *msg, ...);
 
-int portduinoCheckNotNeg(int result, const char *msg, ...);
-int portduinoCheckZero(int result, const char *msg, ...);
+int meshduinoCheckNotNeg(int result, const char *msg, ...);
+int meshduinoCheckZero(int result, const char *msg, ...);
 
 /** Trigger a debugger breakpoint if in the debugger 
  */
-void portduinoDebug();
+void meshduinoDebug();
 
-#endif // PORTDUINO_UTILITY_H
+#endif // MESHDUINO_UTILITY_H

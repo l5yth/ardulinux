@@ -1,4 +1,4 @@
-#ifdef PORTDUINO_LINUX_HARDWARE
+#ifdef MESHDUINO_LINUX_HARDWARE
 
 #include "linux/gpio/LinuxGPIOPin.h"
 #include <assert.h>
@@ -7,7 +7,7 @@
 #include <dirent.h>
 #include <unistd.h>
 
-const char *consumer = "portduino";
+const char *consumer = "meshduino";
 
 static bool chip_is_gpiochip_device(const char *path) {
   char *realname, *sysfsp, devpath[64];
@@ -254,15 +254,15 @@ gpiod_line *LinuxGPIOPin::getLine(const char *chipLabel, const int linuxPinNum) 
  */
 LinuxGPIOPin::LinuxGPIOPin(pin_size_t n, const char *chipLabel,
                            const char *linuxPinName,
-                           const char *portduinoPinName)
-    : GPIOPin(n, portduinoPinName ? portduinoPinName : linuxPinName) {
+                           const char *meshduinoPinName)
+    : GPIOPin(n, meshduinoPinName ? meshduinoPinName : linuxPinName) {
   line = getLine(chipLabel, linuxPinName);
 }
 
 LinuxGPIOPin::LinuxGPIOPin(pin_size_t n, const char *chipLabel,
                            const int linuxPinNum,
-                           const char *portduinoPinName)
-    : GPIOPin(n, portduinoPinName) {
+                           const char *meshduinoPinName)
+    : GPIOPin(n, meshduinoPinName) {
   line = getLine(chipLabel, linuxPinNum);
 }
 

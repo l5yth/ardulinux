@@ -139,7 +139,7 @@ public:
         return mode;
     }
 
-    /** CALLED ONLY BY PORTDUINO special thread
+    /** CALLED ONLY BY MESHDUINO special thread
      * If this pin has an ISR attached, poll it and call the ISR if necessary
      */
     void refreshIfNeeded() {

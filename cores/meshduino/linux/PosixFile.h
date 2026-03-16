@@ -23,7 +23,7 @@ public:
     {
         fd = open(path, mode);
         if (fd == -1)
-            portduinoError("Failed to open posix file %s, errno=%d", path, errno); // FIXME, find a more structured/standard way to throw C++ OS exceptions
+            meshduinoError("Failed to open posix file %s, errno=%d", path, errno); // FIXME, find a more structured/standard way to throw C++ OS exceptions
     }
 
     PosixFile(int _fd) : fd(_fd) {}
@@ -38,11 +38,11 @@ public:
     int ioctl(unsigned long op, void *arg)
     {
         if(fd < 0)
-            portduinoError("no file descriptor, errno=%d", errno);
+            meshduinoError("no file descriptor, errno=%d", errno);
 
         auto ret = ::ioctl(fd, op, arg);
         if (ret == -1)
-            portduinoError("ioctl failed, errno=%d", errno);
+            meshduinoError("ioctl failed, errno=%d", errno);
         return ret;
     }
 };

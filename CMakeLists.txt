@@ -1,13 +1,13 @@
 cmake_minimum_required(VERSION 3.17)
-project(Portduino)
+project(Meshduino)
 
 set(CMAKE_CXX_STANDARD 14)
 
 include_directories(cores/arduino/api)
-include_directories(cores/portduino)
-include_directories(cores/portduino/FS)
+include_directories(cores/meshduino)
+include_directories(cores/meshduino/FS)
 
-add_executable(Portduino
+add_executable(Meshduino
         cores/arduino/api/deprecated/Client.h
         cores/arduino/api/deprecated/HardwareSerial.h
         cores/arduino/api/deprecated/IPAddress.h
@@ -47,20 +47,20 @@ add_executable(Portduino
         cores/arduino/api/Udp.h
         cores/arduino/api/USBAPI.h
         cores/arduino/api/WCharacter.h
-        cores/portduino/Arduino.h
-        cores/portduino/itoa.cpp
-        cores/portduino/dtostrf.c
-        cores/portduino/main.cpp
-        cores/portduino/linux/millis.cpp
-        cores/portduino/simulated/SimCommon.cpp
-        cores/portduino/Utility.cpp
-        cores/portduino/Utility.h
-        cores/portduino/simulated/SimHardwareSPI.cpp
+        cores/meshduino/Arduino.h
+        cores/meshduino/itoa.cpp
+        cores/meshduino/dtostrf.c
+        cores/meshduino/main.cpp
+        cores/meshduino/linux/millis.cpp
+        cores/meshduino/simulated/SimCommon.cpp
+        cores/meshduino/Utility.cpp
+        cores/meshduino/Utility.h
+        cores/meshduino/simulated/SimHardwareSPI.cpp
         example/test.cpp
-       	cores/portduino/simulated/SimHardwareI2C.cpp
-       	cores/portduino/simulated/SimHardwareI2C.h
-       	cores/portduino/linux/LinuxCommon.cpp
-       	cores/portduino/linux/LinuxSerial.cpp
-        cores/portduino/linux/LinuxSerial.h
-        cores/portduino/linux/LinuxHardwareI2C.cpp
-       	cores/portduino/linux/LinuxHardwareI2C.h)
+       	cores/meshduino/simulated/SimHardwareI2C.cpp
+       	cores/meshduino/simulated/SimHardwareI2C.h
+       	cores/meshduino/linux/LinuxCommon.cpp
+       	cores/meshduino/linux/LinuxSerial.cpp
+        cores/meshduino/linux/LinuxSerial.h
+        cores/meshduino/linux/LinuxHardwareI2C.cpp
+       	cores/meshduino/linux/LinuxHardwareI2C.h)

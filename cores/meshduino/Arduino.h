@@ -30,22 +30,22 @@ typedef HardwareI2C TwoWire; // Some Arduino ports use this terminology
 */
 inline pin_size_t digitalPinToInterrupt(pin_size_t pinNumber) { return pinNumber; }
 
-/** apps run under portduino can optionally define a portduinoSetup() to
- * use portduino specific init code (such as gpioBind) to setup portduino on
+/** apps run under meshduino can optionally define a meshduinoSetup() to
+ * use meshduino specific init code (such as gpioBind) to setup meshduino on
  * their host machine, before running 'arduino' code.
  * 
- * This function is called after portduinoCustomInit() (and after command line argument processing)
+ * This function is called after meshduinoCustomInit() (and after command line argument processing)
  */
-extern void portduinoSetup();
+extern void meshduinoSetup();
 
-/** Apps can optionally define this function to do *very* early app init.  typically you should just use it to call portduinoAddArguments()
+/** Apps can optionally define this function to do *very* early app init.  typically you should just use it to call meshduinoAddArguments()
  */
-extern void portduinoCustomInit();
+extern void meshduinoCustomInit();
 
 /**
  * call from portuinoCustomInit() if you want to add custom command line arguments
  */
-void portduinoAddArguments(const struct argp_child &child, void *childArguments);
+void meshduinoAddArguments(const struct argp_child &child, void *childArguments);
 
 /**
  * write a 6 byte 'macaddr'/unique ID to the dmac parameter

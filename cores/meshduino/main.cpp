@@ -1,6 +1,6 @@
 #include "Arduino.h"
-#include "PortduinoFS.h"
-#include "PortduinoGPIO.h"
+#include "MeshduinoFS.h"
+#include "MeshduinoGPIO.h"
 #include <argp.h>
 #include <stdio.h>
 #include <ftw.h>
@@ -19,22 +19,22 @@ static long loopDelay = 100;
 */
 char **progArgv;
 
-/** apps run under portduino can optionally define a portduinoSetup() to
- * use portduino specific init code (such as gpioBind) to setup portduino on
+/** apps run under meshduino can optionally define a meshduinoSetup() to
+ * use meshduino specific init code (such as gpioBind) to setup meshduino on
  * their host machine, before running 'arduino' code.
  */
-void __attribute__((weak)) portduinoSetup() {
-  printf("No portduinoSetup() found, using default settings...\n");
+void __attribute__((weak)) meshduinoSetup() {
+  printf("No meshduinoSetup() found, using default settings...\n");
 }
 
-void __attribute__((weak)) portduinoCustomInit() {}
+void __attribute__((weak)) meshduinoCustomInit() {}
 
 // FIXME - move into app client (out of lib) and use real name
 // FIXME - add app specific options as child options
 // http://www.gnu.org/software/libc/manual/html_node/Argp.html
 const char *argp_program_bug_address =
-    "https://github.com/meshtastic/Meshtastic-device";
-static char doc[] = "An application written with portduino";
+    "https://github.com/meshcore-dev/Meshcore-device";
+static char doc[] = "An application written with meshduino";
 static char args_doc[] = "...";
 
 static struct argp_option options[] = {
@@ -48,7 +48,7 @@ struct TopArguments {
 };
 
 // In bss (inited to zero)
-TopArguments portduinoArguments;
+TopArguments meshduinoArguments;
 
 static struct argp_child children[2] = {{NULL}, {NULL}};
 
@@ -101,7 +101,7 @@ static struct argp argp = {options, parse_opt, args_doc, doc, children, 0, 0};
  * call from portuinoCustomInit() if you want to add custom command line
  * arguments
  */
-void portduinoAddArguments(const struct argp_child &child,
+void meshduinoAddArguments(const struct argp_child &child,
                            void *_childArguments) {
   // We only support one child for now
   children[0] = child;
@@ -127,9 +127,9 @@ int main(int argc, char *argv[]) {
   }
   progArgv[j] = NULL;
 
-  portduinoCustomInit();
+  meshduinoCustomInit();
 
-  auto *args = &portduinoArguments;
+  auto *args = &meshduinoArguments;
 
   auto parseResult = argp_parse(&argp, argc, argv, 0, 0, args);
   if (parseResult == 0) {
@@ -141,7 +141,7 @@ int main(int argc, char *argv[]) {
       const char *homeDir = getenv("HOME");
       assert(homeDir);
 
-      fsRoot += homeDir + String("/.portduino");
+      fsRoot += homeDir + String("/.meshduino");
       mkdir(fsRoot.c_str(), 0700);
 
       const char *instanceName = "default";
@@ -149,7 +149,7 @@ int main(int argc, char *argv[]) {
     } else
       fsRoot += args->fsDir;
 
-    printf("Portduino is starting, VFS root at %s\n", fsRoot.c_str());
+    printf("Meshduino is starting, VFS root at %s\n", fsRoot.c_str());
 
     int status = mkdir(fsRoot.c_str(), 0700);
     if (status != 0 && errno == EEXIST && args->erase) {
@@ -158,10 +158,10 @@ int main(int argc, char *argv[]) {
       rmrf(const_cast<char*>(fsRoot.c_str())); 
     }
 
-    portduinoVFS->mountpoint(fsRoot.c_str());
+    meshduinoVFS->mountpoint(fsRoot.c_str());
 
     gpioInit();
-    portduinoSetup();
+    meshduinoSetup();
     setup();
 
     while (true) {

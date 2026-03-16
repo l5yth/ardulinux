@@ -9,34 +9,34 @@
 
 void notImplemented(const char *msg) { printf("%s is not implemented\n", msg); }
 
-void portduinoError(const char *msg, ...) {
+void meshduinoError(const char *msg, ...) {
   char msgBuffer[256];
   va_list args;
   va_start(args, msg);
   vsnprintf(msgBuffer, sizeof msgBuffer, msg, args);
   va_end(args);
-  printf("Portduino critical error: %s\n", msgBuffer);
+  printf("Meshduino critical error: %s\n", msgBuffer);
   throw Exception(msgBuffer);
 }
 
-int portduinoCheckNotNeg(int result, const char *msg, ...) {
+int meshduinoCheckNotNeg(int result, const char *msg, ...) {
   if (result < 0) {
-    printf("Portduino notneg errno=%d: %s\n", errno, msg);
+    printf("Meshduino notneg errno=%d: %s\n", errno, msg);
     throw Exception(msg);
   }
   return result;
 }
 
 
-int portduinoCheckZero(int result, const char *msg, ...) {
+int meshduinoCheckZero(int result, const char *msg, ...) {
   if (result != 0) {
-    printf("Portduino checkzero %d: %s\n", result, msg);
+    printf("Meshduino checkzero %d: %s\n", result, msg);
     throw Exception(msg);
   }
   return result;
 }
 
-void portduinoDebug() {
+void meshduinoDebug() {
   // Generate an interrupt
   std::raise(SIGINT);
 }

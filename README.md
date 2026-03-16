@@ -1,4 +1,4 @@
-# Portduino
+# Meshduino
 
 This is an attempt to port the Arduino API so that it can run on top of Linux (and other desktop operating systems).  This is to facilitate the following use-cases:
 
@@ -6,11 +6,11 @@ This is an attempt to port the Arduino API so that it can run on top of Linux (a
 - You can debug/develop on a desktop OS where often the debugging environment is more forgiving and the compile/load/debug workflow is quite fast.
 - You can run with all devices simulated (for automated integration testing or simulation) or some/all of the 'devices' connected to real hardware.
 
-We've been using this project successfully on a fairly sizable & popular [Platformio](https://platformio.org/) project ([Meshtastic](https://github.com/meshtastic/)) for the last several months.  We use it both for our continuous integration tests (where we run our device software through crude simulated tests in github actions) and to support Meshtastic on linux for the Pine64 Lora USB dongle.
+We've been using this project successfully on a fairly sizable & popular [Platformio](https://platformio.org/) project ([Meshcore](https://github.com/meshcore-dev/)) for the last several months.  We use it both for our continuous integration tests (where we run our device software through crude simulated tests in github actions) and to support Meshcore on linux for the Pine64 Lora USB dongle.
 
 ## Description
 
-Someone wanted Meshtastic for a new linux based tablet, so we made a new new thing (which might be useful for other projects).
+Someone wanted Meshcore for a new linux based tablet, so we made a new new thing (which might be useful for other projects).
 
 We implement the 'ArduinoCore' libs/API layer and support the following device level access from user-space regular apps:
 
@@ -33,7 +33,7 @@ build_flags = ${env.build_flags} -O0 -lgpiod
 framework = arduino
 ```
 
-For an example (sizable) project that is using this see [meshtastic-device](https://github.com/meshtastic/Meshtastic-device).  Every checkin to that project triggers a new build of the 'native/portuino' version of meshtastic and runs it as a simulation test.  The github [actions](https://github.com/meshtastic/Meshtastic-device/actions) show the commands used to build the linux binary and the console output from running it.
+For an example (sizable) project that is using this see [meshcore-device](https://github.com/meshcore-dev/Meshcore-device).  Every checkin to that project triggers a new build of the 'native/portuino' version of meshcore and runs it as a simulation test.  The github [actions](https://github.com/meshcore-dev/Meshcore-device/actions) show the commands used to build the linux binary and the console output from running it.
 
 ## TODO (short term)
 
@@ -49,9 +49,9 @@ For an example (sizable) project that is using this see [meshtastic-device](http
 
 ## TODO (long term)
 
-- Change PORTDUINO def to PORTDUINO and PORTDUINO_Linux_x86_64
+- Change MESHDUINO def to MESHDUINO and MESHDUINO_Linux_x86_64
 - Figure out why -Os breaks the executable and what part of platformio is setting that (it comes in before the platform stuff even)
-- Split out threading library from meshtastic
+- Split out threading library from meshcore
 - Add a scripting API for doing button presses, reading current screen contents, etc...
 - Clean up C++ exception model
 - Split out logging library

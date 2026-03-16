@@ -1,5 +1,5 @@
 // This implements a really small subset of AsyncUDP.
-// This was the bare minimum needed to get meshtastic's multicast UDP transport running.
+// This was the bare minimum needed to get meshcore's multicast UDP transport running.
 // PRs are welcome to implement more of the API.
 
 #ifndef ESPASYNCUDP_H

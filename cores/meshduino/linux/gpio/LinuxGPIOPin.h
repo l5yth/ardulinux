@@ -2,11 +2,11 @@
 // Created by kevinh on 9/1/20.
 //
 
-#ifdef PORTDUINO_LINUX_HARDWARE
+#ifdef MESHDUINO_LINUX_HARDWARE
 
 #include "Arduino.h"
 #include "Common.h"
-#include "PortduinoGPIO.h"
+#include "MeshduinoGPIO.h"
 #include "Utility.h"
 #include "logging.h"
 
@@ -23,7 +23,7 @@
 #endif
 
 /**
- * Adapts the modern linux GPIO API for use by Portduino
+ * Adapts the modern linux GPIO API for use by Meshduino
  */
 class LinuxGPIOPin : public GPIOPin {
   /// Our GPIO line
@@ -37,8 +37,8 @@ public:
   /**
     * Create a pin given a linux chip label and pin name
     */
-  LinuxGPIOPin(pin_size_t n, const char *chipLabel, const char *linuxPinName, const char *portduinoPinName = NULL);
-  LinuxGPIOPin(pin_size_t n, const char *chipLabel, const int linuxPinNum, const char *portduinoPinName);
+  LinuxGPIOPin(pin_size_t n, const char *chipLabel, const char *linuxPinName, const char *meshduinoPinName = NULL);
+  LinuxGPIOPin(pin_size_t n, const char *chipLabel, const int linuxPinNum, const char *meshduinoPinName);
 
   /**
    * Constructor

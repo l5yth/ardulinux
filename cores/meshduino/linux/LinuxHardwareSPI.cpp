@@ -9,7 +9,7 @@
 
 #include <assert.h>
 
-#ifdef PORTDUINO_LINUX_HARDWARE
+#ifdef MESHDUINO_LINUX_HARDWARE
 
 #include "linux/PosixFile.h"
 #include <linux/spi/spidev.h>
@@ -148,7 +148,7 @@ void HardwareSPI::detachInterrupt() {
 void HardwareSPI::begin(uint32_t freq) {
 
   if (!spiChip) {
-#ifdef PORTDUINO_LINUX_HARDWARE
+#ifdef MESHDUINO_LINUX_HARDWARE
     if (SPI_map[spiString] != nullptr) {
       spiChip = std::static_pointer_cast<SPIChip>(SPI_map[spiString]);
     } else {

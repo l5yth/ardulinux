@@ -2,8 +2,8 @@
 // Created by kevinh on 9/1/20.
 //
 
-#ifndef PORTDUINO_LINUXSERIAL_H
-#define PORTDUINO_LINUXSERIAL_H
+#ifndef MESHDUINO_LINUXSERIAL_H
+#define MESHDUINO_LINUXSERIAL_H
 
 #include "HardwareSerial.h"
 #include <string>
@@ -44,4 +44,4 @@ namespace arduino {
     extern SimSerial Serial;
 }
 
-#endif //PORTDUINO_LINUXSERIAL_H
+#endif //MESHDUINO_LINUXSERIAL_H

@@ -4,7 +4,7 @@
 
 #include "Common.h"
 #include "Utility.h"
-#include "PortduinoGPIO.h"
+#include "MeshduinoGPIO.h"
 
 #include <sched.h>
 #include <stdlib.h>

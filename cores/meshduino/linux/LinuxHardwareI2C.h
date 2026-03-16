@@ -2,8 +2,8 @@
 // Created by kevinh on 9/1/20.
 //
 
-#ifndef PORTDUINO_SIMHARDWAREI2C_H
-#define PORTDUINO_SIMHARDWAREI2C_H
+#ifndef MESHDUINO_SIMHARDWAREI2C_H
+#define MESHDUINO_SIMHARDWAREI2C_H
 
 #include "HardwareI2C.h"
 #include "Utility.h"
@@ -79,4 +79,4 @@ public:
 extern LinuxHardwareI2C Wire;
 } // namespace arduino
 
-#endif // PORTDUINO_SIMHARDWAREI2C_H
+#endif // MESHDUINO_SIMHARDWAREI2C_H
