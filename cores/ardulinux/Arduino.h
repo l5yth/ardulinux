@@ -36,7 +36,11 @@
 
 #include "linux/LinuxHardwareSPI.h"
 #include "linux/LinuxSerial.h"
+#ifdef ARDULINUX_LINUX_HARDWARE
 #include "linux/LinuxHardwareI2C.h"
+#else
+#include "simulated/SimHardwareI2C.h"
+#endif
 #include <argp.h>
 
 using namespace arduino;
