@@ -1,4 +1,0 @@
-/home/kevinh/packages/clion-2020.2.1/bin/cmake/linux/bin/cmake -DCMAKE_BUILD_TYPE=Debug -G "CodeBlocks - Unix Makefiles" /home/kevinh/development/meshtastic/Portduino
--- Configuring done
--- Generating done
--- Build files have been written to: /home/kevinh/development/meshtastic/Portduino/cmake-build-debug

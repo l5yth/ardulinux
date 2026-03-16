@@ -3,64 +3,56 @@ project(Meshduino)
 
 set(CMAKE_CXX_STANDARD 14)
 
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(LIBGPIOD libgpiod)
+
 include_directories(cores/arduino/api)
 include_directories(cores/meshduino)
 include_directories(cores/meshduino/FS)
 
 add_executable(Meshduino
-        cores/arduino/api/deprecated/Client.h
-        cores/arduino/api/deprecated/HardwareSerial.h
-        cores/arduino/api/deprecated/IPAddress.h
-        cores/arduino/api/deprecated/Print.h
-        cores/arduino/api/deprecated/Printable.h
-        cores/arduino/api/deprecated/Server.h
-        cores/arduino/api/deprecated/Stream.h
-        cores/arduino/api/deprecated/Udp.h
-        cores/arduino/api/deprecated/WString.h
-        cores/arduino/api/deprecated-avr-comp/avr/dtostrf.h
-        cores/arduino/api/deprecated-avr-comp/avr/interrupt.h
-        cores/arduino/api/deprecated-avr-comp/avr/pgmspace.h
-        cores/arduino/api/ArduinoAPI.h
-        cores/arduino/api/Binary.h
-        cores/arduino/api/Client.h
+        # ArduinoCore-API
         cores/arduino/api/Common.cpp
-        cores/arduino/api/Common.h
-        cores/arduino/api/Compat.h
-        cores/arduino/api/HardwareI2C.h
-        cores/arduino/api/HardwareSerial.h
-        cores/arduino/api/HardwareSPI.h
-        cores/arduino/api/Interrupts.h
         cores/arduino/api/IPAddress.cpp
-        cores/arduino/api/IPAddress.h
-        cores/arduino/api/itoa.h
-        # cores/arduino/api/PluggableUSB.cpp
-        # cores/arduino/api/PluggableUSB.h
         cores/arduino/api/Print.cpp
-        cores/arduino/api/Print.h
-        cores/arduino/api/Printable.h
-        cores/arduino/api/RingBuffer.h
-        cores/arduino/api/Server.h
         cores/arduino/api/Stream.cpp
-        cores/arduino/api/Stream.h
         cores/arduino/api/String.cpp
-        cores/arduino/api/String.h
-        cores/arduino/api/Udp.h
-        cores/arduino/api/USBAPI.h
-        cores/arduino/api/WCharacter.h
-        cores/meshduino/Arduino.h
+
+        # Meshduino core
         cores/meshduino/itoa.cpp
         cores/meshduino/dtostrf.c
-        cores/meshduino/main.cpp
-        cores/meshduino/linux/millis.cpp
-        cores/meshduino/simulated/SimCommon.cpp
+        cores/meshduino/logging.cpp
         cores/meshduino/Utility.cpp
-        cores/meshduino/Utility.h
+        cores/meshduino/MeshduinoGPIO.cpp
+        cores/meshduino/main.cpp
+
+        # Virtual filesystem
+        cores/meshduino/FS/MeshduinoFS.cpp
+        cores/meshduino/FS/FS.cpp
+        cores/meshduino/FS/vfs_api.cpp
+
+        # Linux platform (always compiled; provide delay, SPI, Serial, etc.)
+        cores/meshduino/linux/millis.cpp
+        cores/meshduino/linux/LinuxCommon.cpp
+        cores/meshduino/linux/LinuxSerial.cpp
+        cores/meshduino/linux/LinuxHardwareSPI.cpp
+        cores/meshduino/simulated/SimCommon.cpp
         cores/meshduino/simulated/SimHardwareSPI.cpp
-        example/test.cpp
-       	cores/meshduino/simulated/SimHardwareI2C.cpp
-       	cores/meshduino/simulated/SimHardwareI2C.h
-       	cores/meshduino/linux/LinuxCommon.cpp
-       	cores/meshduino/linux/LinuxSerial.cpp
-        cores/meshduino/linux/LinuxSerial.h
-        cores/meshduino/linux/LinuxHardwareI2C.cpp
-       	cores/meshduino/linux/LinuxHardwareI2C.h)
+
+        # Example application
+        example/src/test.cpp
+)
+
+if(LIBGPIOD_FOUND)
+    message(STATUS "libgpiod found (${LIBGPIOD_VERSION}) -- enabling Linux hardware GPIO and I2C")
+    target_sources(Meshduino PRIVATE
+            cores/meshduino/linux/gpio/LinuxGPIOPin.cpp
+            cores/meshduino/linux/LinuxHardwareI2C.cpp)
+    target_compile_definitions(Meshduino PRIVATE MESHDUINO_LINUX_HARDWARE)
+    target_include_directories(Meshduino PRIVATE ${LIBGPIOD_INCLUDE_DIRS})
+    target_link_libraries(Meshduino PRIVATE ${LIBGPIOD_LIBRARIES} i2c)
+else()
+    message(STATUS "libgpiod not found -- building with simulated GPIO and I2C only")
+    target_sources(Meshduino PRIVATE
+            cores/meshduino/simulated/SimHardwareI2C.cpp)
+endif()

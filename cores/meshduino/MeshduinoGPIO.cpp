@@ -7,7 +7,6 @@
 #include "logging.h"
 #include "Arduino.h"
 #include "MeshduinoGPIO.h"
-#include "gpiod.h"
 
 #include <assert.h>
 #include <stdlib.h>
