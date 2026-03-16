@@ -53,7 +53,7 @@ void __attribute__((weak)) ardulinuxCustomInit() {}
 // FIXME - add app specific options as child options
 // http://www.gnu.org/software/libc/manual/html_node/Argp.html
 const char *argp_program_bug_address =
-    "https://github.com/meshcore-dev/MeshCore";
+    "https://github.com/l5yth/ardulinux";
 static char doc[] = "An application written with ardulinux";
 static char args_doc[] = "...";
 
@@ -118,7 +118,7 @@ int rmrf(char *path)
 static struct argp argp = {options, parse_opt, args_doc, doc, children, 0, 0};
 
 /**
- * call from portuinoCustomInit() if you want to add custom command line
+ * call from ardulinuxCustomInit() if you want to add custom command line
  * arguments
  */
 void ardulinuxAddArguments(const struct argp_child &child,

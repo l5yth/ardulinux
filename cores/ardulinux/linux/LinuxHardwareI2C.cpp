@@ -20,12 +20,9 @@
 
 #include <unistd.h>
 #include <fcntl.h>
-#include <linux/i2c-dev.h>
 #include <sys/ioctl.h>
-#include "LinuxHardwareI2C.h"
-#include <iostream>
 #include <linux/i2c.h>
-
+#include "LinuxHardwareI2C.h"
 
 extern "C"
 {
@@ -85,16 +82,22 @@ namespace arduino {
     }
 
     size_t LinuxHardwareI2C::write(uint8_t toWrite) {
+        if (requestedBytes >= (int)sizeof(TXbuf))
+            return 0;
         TXbuf[requestedBytes] = toWrite;
         requestedBytes++;
-        return 0;
+        return 1;
     }
     size_t LinuxHardwareI2C::write(const uint8_t *buffer, size_t size) {
-        for (int i = 0; i < size; i++) {
+        size_t written = 0;
+        for (size_t i = 0; i < size; i++) {
+            if (requestedBytes >= (int)sizeof(TXbuf))
+                break;
             TXbuf[requestedBytes] = buffer[i];
             requestedBytes++;
+            written++;
         }
-        return size;
+        return written;
     }
 
     int LinuxHardwareI2C::read() {
@@ -107,7 +110,7 @@ namespace arduino {
             }
             return tmpVal;
         }
-        int tmpBuf = 0;
+        uint8_t tmpBuf = 0;
         if (::read(i2c_file, &tmpBuf, 1) == -1)
             return -1;
         return tmpBuf;

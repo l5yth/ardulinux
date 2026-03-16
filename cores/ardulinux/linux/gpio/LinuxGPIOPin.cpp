@@ -141,7 +141,9 @@ gpiod_line *LinuxGPIOPin::getLine(const char *chipLabel, const char *linuxPinNam
 	settings = gpiod_line_settings_new();
 	gpiod_line_settings_set_direction(settings, GPIOD_LINE_REQUEST_DIRECTION_AS_IS);
 	line_cfg = gpiod_line_config_new();
-	gpiod_line_config_add_line_settings(line_cfg, &offset, 1, settings);
+	int cfg_ret = gpiod_line_config_add_line_settings(line_cfg, &offset, 1, settings);
+	if (cfg_ret != 0)
+		log(SysGPIO, LogError, "gpiod_line_config_add_line_settings failed: %d", cfg_ret);
 	req_cfg = gpiod_request_config_new();
 	gpiod_request_config_set_consumer(req_cfg, consumer);
 	line = gpiod_chip_request_lines(chip, req_cfg, line_cfg);
@@ -172,6 +174,7 @@ gpiod_line *LinuxGPIOPin::getLine(const char *chipLabel, const char *linuxPinNam
   log(SysGPIO, LogDebug, "getLine(%s, %s)", chipLabel, linuxPinName);
   for (int i = 0; i < num_chips; i++) {
     chip = chip_open_by_name(entries[i]->d_name);
+    free(entries[i]);
     if (!chip) {
       if (errno == EACCES)
         continue; // skip chips we don't have access to
@@ -185,6 +188,9 @@ gpiod_line *LinuxGPIOPin::getLine(const char *chipLabel, const char *linuxPinNam
         struct gpiod_line_request_config request = {
             consumer, GPIOD_LINE_REQUEST_DIRECTION_AS_IS, 0};
         auto result = gpiod_line_request(line, &request, 0);
+        for (int j = i + 1; j < num_chips; j++)
+          free(entries[j]);
+        free(entries);
         if(result != 0) {
 		    throw std::invalid_argument("Error, cannot open GPIO chip");
 		}
@@ -192,6 +198,7 @@ gpiod_line *LinuxGPIOPin::getLine(const char *chipLabel, const char *linuxPinNam
       }
     }
   }
+  free(entries);
 #endif
   assert(0); // FIXME throw
 }
@@ -216,7 +223,9 @@ gpiod_line *LinuxGPIOPin::getLine(const char *chipLabel, const int linuxPinNum) 
 	settings = gpiod_line_settings_new();
 	gpiod_line_settings_set_direction(settings, GPIOD_LINE_REQUEST_DIRECTION_AS_IS);
 	line_cfg = gpiod_line_config_new();
-	gpiod_line_config_add_line_settings(line_cfg, &offset, 1, settings);
+	int cfg_ret = gpiod_line_config_add_line_settings(line_cfg, &offset, 1, settings);
+	if (cfg_ret != 0)
+		log(SysGPIO, LogError, "gpiod_line_config_add_line_settings failed: %d", cfg_ret);
 	req_cfg = gpiod_request_config_new();
 	gpiod_request_config_set_consumer(req_cfg, consumer);
 	line = gpiod_chip_request_lines(chip, req_cfg, line_cfg);
@@ -245,6 +254,7 @@ gpiod_line *LinuxGPIOPin::getLine(const char *chipLabel, const int linuxPinNum) 
   log(SysGPIO, LogDebug, "getLine(%s, %d)", chipLabel, linuxPinNum);
   for (int i = 0; i < num_chips; i++) {
     chip = chip_open_by_name(entries[i]->d_name);
+    free(entries[i]);
     if (!chip) {
       if (errno == EACCES)
         continue; // skip chips we don't have access to
@@ -258,6 +268,9 @@ gpiod_line *LinuxGPIOPin::getLine(const char *chipLabel, const int linuxPinNum) 
         struct gpiod_line_request_config request = {
             consumer, GPIOD_LINE_REQUEST_DIRECTION_AS_IS, 0};
         auto result = gpiod_line_request(line, &request, 0);
+        for (int j = i + 1; j < num_chips; j++)
+          free(entries[j]);
+        free(entries);
         if(result != 0) {
 		    throw std::invalid_argument("Error, cannot open GPIO chip");
 		}
@@ -265,6 +278,7 @@ gpiod_line *LinuxGPIOPin::getLine(const char *chipLabel, const int linuxPinNum) 
       }
     }
   }
+  free(entries);
 #endif
   assert(0); // FIXME throw
 }
@@ -351,8 +365,12 @@ void LinuxGPIOPin::setPinMode(PinMode m) {
 		gpiod_line_settings_set_direction(settings, GPIOD_LINE_DIRECTION_INPUT);
 	}
 	line_cfg = gpiod_line_config_new();
-	ret = gpiod_line_config_add_line_settings(line_cfg, &offset, 1,settings);
+	ret = gpiod_line_config_add_line_settings(line_cfg, &offset, 1, settings);
+	if (ret != 0)
+		log(SysGPIO, LogError, "gpiod_line_config_add_line_settings failed: %d", ret);
 	ret = gpiod_line_request_reconfigure_lines(line, line_cfg);
+	if (ret != 0)
+		log(SysGPIO, LogError, "gpiod_line_request_reconfigure_lines failed: %d", ret);
 
 	gpiod_line_config_free(line_cfg);
 	gpiod_line_settings_free(settings);
