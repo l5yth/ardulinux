@@ -13,13 +13,22 @@ ArduLinux is a clean-room continuation, not a fork. The key differences:
 - **Self-contained PlatformIO platform**: ships its own `platform.json` and SCons builder; no separate platform-native dependency or private package mirror required.
 - **Smaller surface area**: dead code, unused variants, and IDE project files removed.
 
-## Requirements
+## Using as a platform (PlatformIO)
 
-- GCC or Clang with C++14 support
-- CMake 3.17+
-- libgpiod 1.x or 2.x
-- libi2c
-- pkg-config
+Add to your `platformio.ini`:
+
+```ini
+[env:ardulinux]
+platform = git+https://github.com/l5yth/ardulinux.git
+framework = arduino
+board = ardulinux
+```
+
+libgpiod and libi2c are detected automatically via `pkg-config` — no extra flags required. Without libgpiod the build falls back to simulated GPIO and I2C, which works without any hardware.
+
+## Building standalone (CMake)
+
+Requires GCC or Clang (C++14), CMake 3.17+, and pkg-config. libgpiod and libi2c are optional; without them the build uses simulated devices.
 
 On Debian/Ubuntu:
 ```sh
@@ -31,28 +40,10 @@ On Arch:
 sudo pacman -S base-devel cmake libgpiod i2c-tools pkg-config
 ```
 
-## Build
-
 ```sh
 cmake -B build
 cmake --build build
 ```
-
-When libgpiod is detected, Linux hardware GPIO and I2C support is compiled in automatically. Without it, the build falls back to simulated GPIO and I2C only.
-
-## Using as a platform (PlatformIO)
-
-Add to your `platformio.ini`:
-
-```ini
-[env:ardulinux]
-platform = git+https://github.com/l5yth/ardulinux.git
-framework = arduino
-board = ardulinux
-build_flags = ${env.build_flags} -O0
-```
-
-libgpiod and libi2c are detected automatically by the platform builder via `pkg-config`. No extra flags are required.
 
 ## Writing an application
 
