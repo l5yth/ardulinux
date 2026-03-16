@@ -10,6 +10,8 @@ on:
       - "CMakeLists.txt"
       - "example/**"
       - "tests/**"
+      - "builder/**"
+      - "platform.json"
   pull_request:
     branches:
       - main
@@ -19,6 +21,8 @@ on:
       - "CMakeLists.txt"
       - "example/**"
       - "tests/**"
+      - "builder/**"
+      - "platform.json"
   workflow_dispatch:
 
 jobs:
@@ -44,6 +48,26 @@ jobs:
 
       - name: Smoke test
         run: ./build/ArduLinux --help
+
+  pio:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: Install PlatformIO
+        run: pip install platformio
+
+      - name: Build example (simulated, no libgpiod)
+        working-directory: example
+        run: pio run
+        env:
+          # Explicitly unset pkg-config path so libgpiod is not detected
+          # even if libgpiod-dev is present on the runner image.
+          PKG_CONFIG_PATH: ""
 
   test:
     runs-on: ubuntu-latest

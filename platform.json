@@ -1,0 +1,18 @@
+{
+  "name": "ardulinux",
+  "version": "0.2.0",
+  "title": "ArduLinux",
+  "description": "ArduLinux - Arduino API for Linux",
+  "homepage": "https://github.com/l5yth/ardulinux",
+  "license": "LGPL-2.1-or-later",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/l5yth/ardulinux"
+  },
+  "frameworks": {
+    "arduino": {
+      "script": "builder/frameworks/arduino.py"
+    }
+  },
+  "packages": {}
+}

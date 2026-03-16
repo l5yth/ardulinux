@@ -55,4 +55,10 @@ int ardulinuxCheckZero(int result, const char *msg, ...);
  */
 void ardulinuxDebug();
 
+// Compatibility aliases for libraries built against the portduino API
+// (e.g. the upstream arduino-libraries/WiFi at the pinned submodule commit).
+#define portduinoCheckNotNeg ardulinuxCheckNotNeg
+#define portduinoCheckZero   ardulinuxCheckZero
+#define portduinoDebug       ardulinuxDebug
+
 #endif // ARDULINUX_UTILITY_H
