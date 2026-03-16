@@ -102,8 +102,7 @@ uint8_t LinuxHardwareSPI::transfer(uint8_t data) {
 
 uint16_t LinuxHardwareSPI::transfer16(uint16_t data) {
   notImplemented("transfer16");
-  assert(0); // make fatal for now to prevent accidental use
-  return 0x4242;
+  return 0;
 }
 
 void LinuxHardwareSPI::transfer(void *buf, size_t count) {
