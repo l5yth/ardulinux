@@ -10,3 +10,6 @@ build*/
 # Compiled test binaries
 tests/spidev
 tests/gpio
+
+# Coverage
+coverage.info
