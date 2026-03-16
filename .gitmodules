@@ -1,3 +1,6 @@
 [submodule "libraries/WiFi"]
 	path = libraries/WiFi
 	url = https://github.com/arduino-libraries/WiFi
+[submodule "ArduinoCore-API"]
+	path = ArduinoCore-API
+	url = https://github.com/arduino/ArduinoCore-API
