@@ -1,15 +1,25 @@
-from os.path import join, isdir
+from os.path import join, isdir, exists
+import os
+import shutil
 import subprocess
 from SCons.Script import DefaultEnvironment
 
 env = DefaultEnvironment()
 
 PLATFORM_DIR  = env.PioPlatform().get_dir()
-API_DIR       = join(PLATFORM_DIR, "cores", "arduino", "api")
+_API_DIR      = join(PLATFORM_DIR, "cores", "arduino", "api")
 ARDULINUX_DIR = join(PLATFORM_DIR, "cores", "ardulinux")
 
-assert isdir(API_DIR),       "ArduinoCore-API not found: " + API_DIR
+assert isdir(_API_DIR),      "ArduinoCore-API not found: " + _API_DIR
 assert isdir(ARDULINUX_DIR), "ArduLinux core not found: "  + ARDULINUX_DIR
+
+# Create a patched copy of ArduinoCore-API without Print.h so the include
+# search falls through to our platform Print.h (which adds printf).
+# This avoids forking ArduinoCore-API while keeping Print extensible.
+API_DIR = join(env.subst("$PROJECT_BUILD_DIR"), "patched_api")
+if not exists(API_DIR):
+    shutil.copytree(_API_DIR, API_DIR)
+    os.remove(join(API_DIR, "Print.h"))
 
 # Detect libgpiod via pkg-config; fall back gracefully if pkg-config is absent.
 try:
@@ -21,11 +31,11 @@ try:
 except FileNotFoundError:
     has_libgpiod = False
 
-cppdefines = ["HOST"]
+cppdefines = ["HOST", ("ARDUINO", "10810")]
 cpppath    = [
-    API_DIR,
-    ARDULINUX_DIR,
+    ARDULINUX_DIR,          # platform Print.h shadows ArduinoCore-API's
     join(ARDULINUX_DIR, "FS"),
+    API_DIR,
     join(PLATFORM_DIR, "libraries", "Wire", "src"),
     join(PLATFORM_DIR, "libraries", "SPI", "src"),
 ]

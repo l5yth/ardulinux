@@ -22,6 +22,8 @@
 #define ARDULINUX_LINUXSERIAL_H
 
 #include "HardwareSerial.h"
+#include <cstdarg>
+#include <cstdio>
 #include <string>
 
 namespace arduino {
@@ -40,6 +42,15 @@ namespace arduino {
         virtual size_t write(uint8_t);
         using Print::write; // pull in write(str) and write(buf, size) from Print
         virtual operator bool();
+        size_t printf(const char *format, ...) __attribute__((format(printf, 2, 3))) {
+            va_list args;
+            va_start(args, format);
+            char buf[256];
+            int n = vsnprintf(buf, sizeof(buf), format, args);
+            va_end(args);
+            if (n > 0) print(buf);
+            return (size_t)(n > 0 ? n : 0);
+        }
     };
 
         class SimSerial : public HardwareSerial {
@@ -54,6 +65,15 @@ namespace arduino {
         virtual size_t write(uint8_t);
         using Print::write; // pull in write(str) and write(buf, size) from Print
         virtual operator bool();
+        size_t printf(const char *format, ...) __attribute__((format(printf, 2, 3))) {
+            va_list args;
+            va_start(args, format);
+            char buf[256];
+            int n = vsnprintf(buf, sizeof(buf), format, args);
+            va_end(args);
+            if (n > 0) print(buf);
+            return (size_t)(n > 0 ? n : 0);
+        }
     };
 
     extern LinuxSerial Serial1;
