@@ -51,7 +51,6 @@ jobs:
 
   pio:
     runs-on: ubuntu-latest
-    needs: build
 
     steps:
       - name: Checkout repository
@@ -65,6 +64,10 @@ jobs:
       - name: Build example (simulated, no libgpiod)
         working-directory: example
         run: pio run
+        env:
+          # Explicitly unset pkg-config path so libgpiod is not detected
+          # even if libgpiod-dev is present on the runner image.
+          PKG_CONFIG_PATH: ""
 
   test:
     runs-on: ubuntu-latest

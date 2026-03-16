@@ -48,6 +48,7 @@ Add to your `platformio.ini`:
 [env:ardulinux]
 platform = git+https://github.com/l5yth/ardulinux.git
 framework = arduino
+board = ardulinux
 build_flags = ${env.build_flags} -O0
 ```
 
