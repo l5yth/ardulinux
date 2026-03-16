@@ -14,21 +14,21 @@ and run platform IO to build the example.
 For example:
 
 ```
-skip@Dell-7040:~../resources/framework-meshduino$ cd example/
-skip@Dell-7040:~../resources/framework-meshduino/example$ git submodule init
+skip@Dell-7040:~../resources/meshduino$ cd example/
+skip@Dell-7040:~../resources/meshduino/example$ git submodule init
 Submodule 'libraries/WiFi' (https:/github.com/Meshcore/WiFi.git) registered for path '../libraries/WiFi'
-skip@Dell-7040:~../resources/framework-meshduino/example$ git submodule update
-Cloning into '/home/skip../resources/framework-meshduino/libraries/WiFi'...
+skip@Dell-7040:~../resources/meshduino/example$ git submodule update
+Cloning into '/home/skip../resources/meshduino/libraries/WiFi'...
 Submodule path '../libraries/WiFi': checked out 'b885b9595d54ee6eae59696eeae98f631eb27a23'
-skip@Dell-7040:~../resources/framework-meshduino/example$ pio run
-Processing native (platform: https:/github.com/meshcore/platform-native.git; framework: arduino; board: linux_hardware)
+skip@Dell-7040:~../resources/meshduino/example$ pio run
+Processing native (platform: https:/github.com/platformio/platform-native; framework: arduino; board: linux_hardware)
 --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Verbose mode can be enabled via `-v, --verbose` option
 CONFIGURATION: https:/docs.platformio.org/page/boards/native/linux_hardware.html
 PLATFORM: Native (1.2.1+sha.04435d0) > Meshduino
 HARDWARE: 95.37MB RAM, 95.37MB Flash
 PACKAGES:
- - framework-meshduino @ 0.0.1+sha.de3548f
+ - meshduino @ 0.0.1+sha.de3548f
 LDF: Library Dependency Finder -> https:/bit.ly/configure-pio-ldf
 LDF Modes: Finder ~ chain, Compatibility ~ soft
 [nanopb] Installing Protocol Buffers dependencies
@@ -41,6 +41,6 @@ Archiving .pio/build/native/libFrameworkArduino.a
 Indexing .pio/build/native/libFrameworkArduino.a
 Linking .pio/build/native/program
 ================================================================================== [SUCCESS] Took 1.99 seconds ==================================================================================
-skip@Dell-7040:~../resources/framework-meshduino/example$
+skip@Dell-7040:~../resources/meshduino/example$
 ```
 

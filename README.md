@@ -33,7 +33,7 @@ build_flags = ${env.build_flags} -O0 -lgpiod
 framework = arduino
 ```
 
-For an example (sizable) project that is using this see [meshcore-device](https://github.com/meshcore-dev/Meshcore-device).  Every checkin to that project triggers a new build of the 'native/portuino' version of meshcore and runs it as a simulation test.  The github [actions](https://github.com/meshcore-dev/Meshcore-device/actions) show the commands used to build the linux binary and the console output from running it.
+For an example (sizable) project that is using this see [MeshCore](https://github.com/meshcore-dev/MeshCore).  Every checkin to that project triggers a new build of the 'native/portuino' version of meshcore and runs it as a simulation test.  The github [actions](https://github.com/meshcore-dev/MeshCore/actions) show the commands used to build the linux binary and the console output from running it.
 
 ## TODO (short term)
 

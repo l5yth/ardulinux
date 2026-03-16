@@ -33,7 +33,7 @@ void __attribute__((weak)) meshduinoCustomInit() {}
 // FIXME - add app specific options as child options
 // http://www.gnu.org/software/libc/manual/html_node/Argp.html
 const char *argp_program_bug_address =
-    "https://github.com/meshcore-dev/Meshcore-device";
+    "https://github.com/meshcore-dev/MeshCore";
 static char doc[] = "An application written with meshduino";
 static char args_doc[] = "...";
 
