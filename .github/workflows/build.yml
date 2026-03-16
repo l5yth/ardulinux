@@ -47,12 +47,19 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
+    needs: build
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           submodules: recursive
+
+      - name: Cache Catch2
+        uses: actions/cache@v4
+        with:
+          path: build-coverage/_deps
+          key: catch2-v3.7.1
 
       - name: Install dependencies
         run: |

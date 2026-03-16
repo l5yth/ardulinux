@@ -26,6 +26,15 @@ protected:
 
 // ─── SimGPIOPin defaults ──────────────────────────────────────────────────────
 
+TEST_CASE("GPIOPin defaults to INPUT_PULLUP mode and HIGH status", "[gpio]") {
+    gpioInit(4);
+    // Bind a TestGPIOPin so we can inspect getPinMode() directly
+    auto *pin = new TestGPIOPin(0, HIGH);
+    gpioBind(pin);
+    CHECK(pin->getPinMode() == INPUT_PULLUP);
+    CHECK(digitalRead(0) == HIGH);
+}
+
 TEST_CASE("gpioInit populates pins with SimGPIOPins", "[gpio]") {
     gpioInit(4);
     // Default PinStatus is HIGH and mode is INPUT_PULLUP (see GPIOPin)

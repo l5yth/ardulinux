@@ -6,11 +6,6 @@ set(CMAKE_CXX_STANDARD 14)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(LIBGPIOD libgpiod)
 
-# Coverage build type: compile with gcov instrumentation
-if(CMAKE_BUILD_TYPE STREQUAL "Coverage")
-    add_compile_options(--coverage -O0 -g)
-    add_link_options(--coverage)
-endif()
 
 # ─── ardulinux-base static library ───────────────────────────────────────────
 # Core sources shared by the ArduLinux executable and the unit-test binary.
@@ -56,6 +51,12 @@ target_include_directories(ardulinux-base PUBLIC
 # declaration (guarded by #ifndef HOST) since we are a host machine build.
 # Applied to ardulinux-base PUBLIC so all targets that link it inherit the definition.
 target_compile_definitions(ardulinux-base PUBLIC HOST)
+
+# Coverage build type: scoped to our sources only, not to Catch2 or system libs.
+if(CMAKE_BUILD_TYPE STREQUAL "Coverage")
+    target_compile_options(ardulinux-base PUBLIC --coverage -O0 -g)
+    target_link_options(ardulinux-base PUBLIC --coverage)
+endif()
 
 if(LIBGPIOD_FOUND)
     message(STATUS "libgpiod found (${LIBGPIOD_VERSION}) -- enabling Linux hardware GPIO and I2C")
