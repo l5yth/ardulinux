@@ -145,13 +145,13 @@ namespace arduino {
                 {  // Start address
                 .addr = address,
                 .flags = 0, // write
-                .len = requestedBytes,
+                .len = (__u16)requestedBytes,
                 .buf = (unsigned char *) TXbuf
                 },
                 { // Read buffer
                 .addr = address,
                 .flags = I2C_M_RD, // read
-                .len = count,
+                .len = (__u16)count,
                 .buf = (unsigned char *)RXbuf
                 }
             };
