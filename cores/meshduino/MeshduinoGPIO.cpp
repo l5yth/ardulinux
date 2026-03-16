@@ -25,6 +25,7 @@
 #include "MeshduinoGPIO.h"
 
 #include <assert.h>
+#include <memory>
 #include <stdlib.h>
 #include <vector>
 

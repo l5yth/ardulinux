@@ -21,19 +21,14 @@ add_executable(Meshduino
 
 # ArduinoCore-API's Common.h re-declares atexit() without noexcept, which conflicts
 # with glibc's noexcept declaration on GCC 15+. Defining HOST suppresses that
-# declaration (it is guarded by #ifndef HOST) since we are a host machine build.
-set_source_files_properties(
-        cores/arduino/api/Common.cpp
-        cores/arduino/api/IPAddress.cpp
-        cores/arduino/api/Print.cpp
-        cores/arduino/api/Stream.cpp
-        cores/arduino/api/String.cpp
-        PROPERTIES COMPILE_DEFINITIONS "HOST"
-)
+# declaration (guarded by #ifndef HOST) since we are a host machine build.
+# Applied globally because Common.h is included transitively by all meshduino files.
+target_compile_definitions(Meshduino PRIVATE HOST)
 
 target_sources(Meshduino PRIVATE
 
         # Meshduino core
+        cores/meshduino/HardwareSPIStubs.cpp
         cores/meshduino/itoa.cpp
         cores/meshduino/dtostrf.c
         cores/meshduino/logging.cpp

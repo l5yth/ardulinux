@@ -18,8 +18,7 @@
 // License along with this library; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
-#include "HardwareSPI.h"
-#include "SPIChip.h"
+#include "linux/LinuxHardwareSPI.h"
 #include "Utility.h"
 #include "logging.h"
 
@@ -31,15 +30,12 @@
 #include <linux/spi/spidev.h>
 #include <mutex>
 #include <map>
-#include <memory>
-
-
 
 class LinuxSPIChip : public SPIChip, private PosixFile {
   private:
     std::mutex SPIMutex;
     uint32_t defaultSpeed = 2000000;
-    
+
   public:
     LinuxSPIChip(const char *name, uint32_t default_frequency) : PosixFile(name) {
       defaultSpeed = default_frequency;
@@ -53,16 +49,6 @@ class LinuxSPIChip : public SPIChip, private PosixFile {
       assert(status >= 0);
     }
 
-    /**
-     * Do a SPI transaction to the selected device
-     *
-     * @param outBuf if NULL it will be not used (zeros will be sent)
-     * @param inBuf if NULL it will not be used (device response bytes will be
-     * discarded)
-     * @param deassertCS after last transaction (if not set, it will be left
-     * asserted)
-     * @return 0 for success, else ERRNO fault code
-     */
     int transfer(const uint8_t *outBuf, uint8_t *inBuf, size_t bufLen,
                 bool deassertCS = true) {
       struct spi_ioc_transfer xfer;
@@ -85,92 +71,87 @@ class LinuxSPIChip : public SPIChip, private PosixFile {
     void beginTransaction(uint32_t clockSpeed) {
       SPIMutex.lock();
       assert (ioctl(SPI_IOC_WR_MAX_SPEED_HZ, &clockSpeed) >= 0);
-
     }
     void endTransaction() {
       SPIMutex.unlock();
       assert (ioctl(SPI_IOC_WR_MAX_SPEED_HZ, &defaultSpeed) >= 0);
     }
 };
-std::map<std::string, std::shared_ptr<void>> SPI_map;
-#endif
+
+static std::map<std::string, std::shared_ptr<void>> SPI_map;
+
+#endif // MESHDUINO_LINUX_HARDWARE
 
 namespace arduino {
 
-HardwareSPI::HardwareSPI(int8_t _spi_host) {
-  char x = (_spi_host & (1 << 4) - 1) + '0';
-  char y = (_spi_host >> 4) + '0';
+LinuxHardwareSPI::LinuxHardwareSPI(int8_t spi_host) {
+  char x = (spi_host & (1 << 4) - 1) + '0';
+  char y = (spi_host >> 4) + '0';
   spiString = "/dev/spidev";
   spiString += x;
   spiString += ".";
   spiString += y;
 }
-uint8_t HardwareSPI::transfer(uint8_t data) {
+
+uint8_t LinuxHardwareSPI::transfer(uint8_t data) {
   uint8_t response;
   assert(spiChip);
   spiChip->transfer(&data, &response, 1, false); // leave CS asserted
-  // printf("sent 0x%x, received %0x\n", data, response);
   return response;
 }
 
-uint16_t HardwareSPI::transfer16(uint16_t data) {
+uint16_t LinuxHardwareSPI::transfer16(uint16_t data) {
   notImplemented("transfer16");
   assert(0); // make fatal for now to prevent accidental use
   return 0x4242;
 }
 
-// BIG PERFORMANCE FIXME!  Change the RadioLib transfer code to use this method
-// for many fewer kernel switches/USB transactions.
-// In fact - switch the API to the nrf52/esp32 arduino version that takes both
-// an inbuf and an outbuf;
-void HardwareSPI::transfer(void *buf, size_t count) {
+void LinuxHardwareSPI::transfer(void *buf, size_t count) {
   spiChip->transfer((uint8_t *) buf, (uint8_t *) buf, count, false);
 }
 
-void HardwareSPI::transfer(void *out, void *in, size_t count) {
+void LinuxHardwareSPI::transfer(void *out, void *in, size_t count) {
   spiChip->transfer((uint8_t *) out, (uint8_t *) in, count, false);
 }
 
-// Transaction Functions
-void HardwareSPI::usingInterrupt(int interruptNumber) {
+void LinuxHardwareSPI::usingInterrupt(int interruptNumber) {
   // Do nothing
 }
 
-void HardwareSPI::notUsingInterrupt(int interruptNumber) {
+void LinuxHardwareSPI::notUsingInterrupt(int interruptNumber) {
   // Do nothing
 }
 
-void HardwareSPI::beginTransaction(SPISettings settings) {
-  assert(settings.bitOrder == MSBFIRST); // we don't support changing yet
-  assert(settings.dataMode == SPI_MODE0);
+void LinuxHardwareSPI::beginTransaction(SPISettings settings) {
+  assert(settings.getBitOrder() == MSBFIRST); // we don't support changing yet
+  assert(settings.getDataMode() == SPI_MODE0);
   if (spiChip)
-    spiChip->beginTransaction(settings.clockFreq);
+    spiChip->beginTransaction(settings.getClockFreq());
 }
 
-void HardwareSPI::endTransaction(void) {
+void LinuxHardwareSPI::endTransaction(void) {
   if (spiChip)
     spiChip->endTransaction();
 }
 
-// SPI Configuration methods
-void HardwareSPI::attachInterrupt() {
+void LinuxHardwareSPI::attachInterrupt() {
   // Do nothing
 }
 
-void HardwareSPI::detachInterrupt() {
+void LinuxHardwareSPI::detachInterrupt() {
   // Do nothing
 }
 
-void HardwareSPI::begin(uint32_t freq) {
+void LinuxHardwareSPI::begin() {
+  begin(defaultFreq);
+}
 
+void LinuxHardwareSPI::begin(uint32_t freq) {
   if (!spiChip) {
 #ifdef MESHDUINO_LINUX_HARDWARE
     if (SPI_map[spiString] != nullptr) {
       spiChip = std::static_pointer_cast<SPIChip>(SPI_map[spiString]);
     } else {
-
-      // FIXME, only install the following on linux and only if we see that the
-      // device exists in the filesystem
       try {
         spiChip = std::make_shared<LinuxSPIChip>(spiString.c_str(), freq);
         SPI_map[spiString] = spiChip;
@@ -184,20 +165,19 @@ void HardwareSPI::begin(uint32_t freq) {
   }
 }
 
-void HardwareSPI::begin(const char *name, uint32_t freq) {
+void LinuxHardwareSPI::begin(const char *name, uint32_t freq) {
   if (name != nullptr)
     spiString = std::string(name);
   begin(freq);
 }
 
-void HardwareSPI::end() {
+void LinuxHardwareSPI::end() {
   if (spiChip) {
-      spiChip.reset();
-
+    spiChip.reset();
+    spiChip = NULL;
   }
-  spiChip = NULL;
 }
 
-} // namespace arduino
+LinuxHardwareSPI SPI;
 
-HardwareSPI SPI;
+} // namespace arduino
