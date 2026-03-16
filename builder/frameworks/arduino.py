@@ -1,0 +1,85 @@
+from os.path import join, isdir
+import subprocess
+from SCons.Script import DefaultEnvironment
+
+env = DefaultEnvironment()
+
+PLATFORM_DIR  = env.PioPlatform().get_dir()
+API_DIR       = join(PLATFORM_DIR, "cores", "arduino", "api")
+ARDULINUX_DIR = join(PLATFORM_DIR, "cores", "ardulinux")
+
+assert isdir(API_DIR),       "ArduinoCore-API not found: " + API_DIR
+assert isdir(ARDULINUX_DIR), "ArduLinux core not found: "  + ARDULINUX_DIR
+
+# Detect libgpiod via pkg-config
+has_libgpiod = subprocess.call(
+    ["pkg-config", "--exists", "libgpiod"],
+    stdout=subprocess.DEVNULL,
+    stderr=subprocess.DEVNULL,
+) == 0
+
+cppdefines = ["HOST"]
+cpppath    = [API_DIR, ARDULINUX_DIR, join(ARDULINUX_DIR, "FS")]
+
+if has_libgpiod:
+    cppdefines.append("ARDULINUX_LINUX_HARDWARE")
+    raw = subprocess.check_output(["pkg-config", "--cflags", "libgpiod"]).decode().split()
+    cpppath += [f[2:] for f in raw if f.startswith("-I")]
+
+env.Append(CPPPATH=cpppath, CPPDEFINES=cppdefines)
+
+if has_libgpiod:
+    env.Append(LIBS=["gpiod", "i2c"])
+
+# ─── ArduinoCore-API sources ──────────────────────────────────────────────────
+env.BuildSources(
+    join("$BUILD_DIR", "FrameworkArduinoAPI"),
+    API_DIR,
+    src_filter=[
+        "-<*>",
+        "+<Common.cpp>",
+        "+<IPAddress.cpp>",
+        "+<Print.cpp>",
+        "+<Stream.cpp>",
+        "+<String.cpp>",
+    ],
+)
+
+# ─── ArduLinux core sources ───────────────────────────────────────────────────
+ardulinux_filter = [
+    "-<*>",
+    "+<HardwareSPIStubs.cpp>",
+    "+<itoa.cpp>",
+    "+<dtostrf.c>",
+    "+<logging.cpp>",
+    "+<Utility.cpp>",
+    "+<ArduLinuxGPIO.cpp>",
+    "+<main.cpp>",
+    "+<main_entry.cpp>",
+    # Virtual filesystem
+    "+<FS/ArduLinuxFS.cpp>",
+    "+<FS/FS.cpp>",
+    "+<FS/vfs_api.cpp>",
+    # Linux platform (always compiled: delay, SPI, Serial)
+    "+<linux/millis.cpp>",
+    "+<linux/LinuxCommon.cpp>",
+    "+<linux/LinuxSerial.cpp>",
+    "+<linux/LinuxHardwareSPI.cpp>",
+    # Simulated fallbacks
+    "+<simulated/SimCommon.cpp>",
+    "+<simulated/SimHardwareSPI.cpp>",
+]
+
+if has_libgpiod:
+    ardulinux_filter += [
+        "+<linux/gpio/LinuxGPIOPin.cpp>",
+        "+<linux/LinuxHardwareI2C.cpp>",
+    ]
+else:
+    ardulinux_filter.append("+<simulated/SimHardwareI2C.cpp>")
+
+env.BuildSources(
+    join("$BUILD_DIR", "FrameworkArduLinux"),
+    ARDULINUX_DIR,
+    ardulinux_filter,
+)
