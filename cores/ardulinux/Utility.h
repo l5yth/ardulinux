@@ -40,7 +40,7 @@ void notImplemented(const char *msg);
 
 // Used as a suffix added after a method/function declaration
 #define NOT_IMPLEMENTED(msg)                                                   \
-  { notImplemented(msg); }
+  { notImplemented(msg); __builtin_unreachable(); }
 
 /**
  * Normally arduino apps don't use exceptions.  If exceptions are allowed an exception will be thrown, otherwise an error message will be printed
