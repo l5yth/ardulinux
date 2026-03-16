@@ -52,10 +52,18 @@ target_include_directories(ardulinux-base PUBLIC
 # Applied to ardulinux-base PUBLIC so all targets that link it inherit the definition.
 target_compile_definitions(ardulinux-base PUBLIC HOST)
 
-# Coverage build type: scoped to our sources only, not to Catch2 or system libs.
+# Coverage build type:
+#   PRIVATE compile — only ardulinux-base's own sources are instrumented; the
+#     flag does NOT propagate to Catch2 (a FetchContent subproject that would
+#     inherit PUBLIC flags).
+#   INTERFACE link — propagates --coverage to every executable that links
+#     ardulinux-base (ArduLinux, ardulinux-tests) so the gcov runtime
+#     (libgcov) is pulled in and the __gcov_* stubs in the instrumented
+#     objects are resolved. Catch2 is unaffected because it doesn't link
+#     ardulinux-base.
 if(CMAKE_BUILD_TYPE STREQUAL "Coverage")
-    target_compile_options(ardulinux-base PUBLIC --coverage -O0 -g)
-    target_link_options(ardulinux-base PUBLIC --coverage)
+    target_compile_options(ardulinux-base PRIVATE --coverage -O0 -g)
+    target_link_options(ardulinux-base INTERFACE --coverage)
 endif()
 
 if(LIBGPIOD_FOUND)

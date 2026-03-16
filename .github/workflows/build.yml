@@ -59,7 +59,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: build-coverage/_deps
-          key: catch2-v3.7.1
+          key: catch2-v3.7.1-nocover
 
       - name: Install dependencies
         run: |
@@ -77,8 +77,19 @@ jobs:
 
       - name: Generate coverage report
         run: |
-          lcov --capture --directory build-coverage --output-file coverage.info
-          lcov --remove coverage.info '/usr/*' '*/Catch2/*' '*/tests/*' \
+          # --no-external: skip system headers (/usr/include etc.)
+          # --ignore-errors source: don't abort if a compiled-out source file
+          #   is missing (e.g. stale _deps objects in a warm cache)
+          lcov --capture \
+               --directory build-coverage \
+               --base-directory . \
+               --no-external \
+               --ignore-errors source \
+               --output-file coverage.info
+          # Drop any _deps coverage that slipped through (e.g. cache hit with
+          # old instrumented Catch2 objects)
+          lcov --remove coverage.info '*/build-coverage/_deps/*' \
+               --ignore-errors inconsistent \
                --output-file coverage.info
           lcov --list coverage.info
 
