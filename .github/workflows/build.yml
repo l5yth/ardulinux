@@ -1,0 +1,40 @@
+name: Build
+
+on:
+  push:
+    paths:
+      - ".github/workflows/build.yml"
+      - "cores/**"
+      - "CMakeLists.txt"
+      - "example/**"
+  pull_request:
+    paths:
+      - ".github/workflows/build.yml"
+      - "cores/**"
+      - "CMakeLists.txt"
+      - "example/**"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y cmake libgpiod-dev libi2c-dev pkg-config
+
+      - name: Configure
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      - name: Smoke test
+        run: ./build/ArduLinux --help
