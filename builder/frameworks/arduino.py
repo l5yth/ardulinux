@@ -11,12 +11,15 @@ ARDULINUX_DIR = join(PLATFORM_DIR, "cores", "ardulinux")
 assert isdir(API_DIR),       "ArduinoCore-API not found: " + API_DIR
 assert isdir(ARDULINUX_DIR), "ArduLinux core not found: "  + ARDULINUX_DIR
 
-# Detect libgpiod via pkg-config
-has_libgpiod = subprocess.call(
-    ["pkg-config", "--exists", "libgpiod"],
-    stdout=subprocess.DEVNULL,
-    stderr=subprocess.DEVNULL,
-) == 0
+# Detect libgpiod via pkg-config; fall back gracefully if pkg-config is absent.
+try:
+    has_libgpiod = subprocess.call(
+        ["pkg-config", "--exists", "libgpiod"],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    ) == 0
+except FileNotFoundError:
+    has_libgpiod = False
 
 cppdefines = ["HOST"]
 cpppath    = [API_DIR, ARDULINUX_DIR, join(ARDULINUX_DIR, "FS")]
@@ -46,6 +49,8 @@ env.BuildSources(
 )
 
 # ─── ArduLinux core sources ───────────────────────────────────────────────────
+# Source list mirrors CMakeLists.txt ardulinux-base — keep in sync.
+# Not included: AsyncUDP.cpp, ArdulinuxPrint.cpp (absent from CMakeLists.txt).
 ardulinux_filter = [
     "-<*>",
     "+<HardwareSPIStubs.cpp>",

@@ -49,6 +49,23 @@ jobs:
       - name: Smoke test
         run: ./build/ArduLinux --help
 
+  pio:
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: Install PlatformIO
+        run: pip install platformio
+
+      - name: Build example (simulated, no libgpiod)
+        working-directory: example
+        run: pio run
+
   test:
     runs-on: ubuntu-latest
     needs: build
