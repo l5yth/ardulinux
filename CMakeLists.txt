@@ -35,6 +35,7 @@ target_sources(ArduLinux PRIVATE
         cores/ardulinux/Utility.cpp
         cores/ardulinux/ArduLinuxGPIO.cpp
         cores/ardulinux/main.cpp
+        cores/ardulinux/main_entry.cpp
 
         # Virtual filesystem
         cores/ardulinux/FS/ArduLinuxFS.cpp

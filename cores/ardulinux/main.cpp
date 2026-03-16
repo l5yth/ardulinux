@@ -135,7 +135,7 @@ void reboot() {
   exit(EXIT_FAILURE);
 }
 
-int main(int argc, char *argv[]) {
+int ardulinux_main(int argc, char *argv[]) {
 
   progArgv = (char**) malloc((argc + 1) * sizeof(char*)); // New pointer array, argc + 1 to hold the final null
   int j = 0;
