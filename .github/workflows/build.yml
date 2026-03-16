@@ -56,7 +56,7 @@ jobs:
           submodules: recursive
 
       - name: Cache Catch2
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: build-coverage/_deps
           key: catch2-v3.7.1-nocover
