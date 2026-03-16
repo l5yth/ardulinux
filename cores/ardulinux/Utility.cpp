@@ -27,6 +27,8 @@ void notImplemented(const char *msg) { printf("%s is not implemented\n", msg); }
 
 void ardulinuxError(const char *msg, ...) {
   char msgBuffer[256];
+  // Expand the printf-style format string into a fixed-size buffer before
+  // throwing so that the Exception carries a fully rendered message.
   va_list args;
   va_start(args, msg);
   vsnprintf(msgBuffer, sizeof msgBuffer, msg, args);
@@ -37,6 +39,8 @@ void ardulinuxError(const char *msg, ...) {
 
 int ardulinuxCheckNotNeg(int result, const char *msg, ...) {
   if (result < 0) {
+    // Include errno so callers can diagnose OS-level failures without
+    // needing to capture it themselves before calling this function.
     printf("ArduLinux notneg errno=%d: %s\n", errno, msg);
     throw Exception(msg);
   }
@@ -53,6 +57,8 @@ int ardulinuxCheckZero(int result, const char *msg, ...) {
 }
 
 void ardulinuxDebug() {
-  // Generate an interrupt
+  // Raise SIGINT to pause execution in an attached debugger (e.g. gdb).
+  // When not debugging, this terminates the process unless the signal is
+  // handled elsewhere.
   std::raise(SIGINT);
 }

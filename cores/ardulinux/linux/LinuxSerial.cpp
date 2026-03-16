@@ -28,38 +28,47 @@
 
 #include <stdio.h>
 
+/** Module-level termios structure shared across begin() calls. */
 struct termios tty;
+
 namespace arduino {
     LinuxSerial Serial1;
     SimSerial Serial;
-    // https://blog.mbedded.ninja/programming/operating-systems/linux/linux-serial-ports-using-c-cpp/
+    // Reference: https://blog.mbedded.ninja/programming/operating-systems/linux/linux-serial-ports-using-c-cpp/
 
     void LinuxSerial::begin(unsigned long baudrate, uint16_t config) {
         serial_port = open(path.c_str(), O_RDWR);
         tcgetattr(serial_port, &tty);
 
-        tty.c_cflag &= ~PARENB; // Clear parity bit, disabling parity (most common)
-        tty.c_cflag &= ~CSTOPB; // Clear stop field, only one stop bit used in communication (most common)
-        tty.c_cflag &= ~CSIZE; // Clear all bits that set the data size 
-        tty.c_cflag |= CS8; // 8 bits per byte (most common)
-        tty.c_cflag &= ~CRTSCTS; // Disable RTS/CTS hardware flow control (most common)
-        tty.c_cflag |= CREAD | CLOCAL; // Turn on READ & ignore ctrl lines (CLOCAL = 1)
+        // Configure raw mode: no parity, 1 stop bit, 8 data bits, no flow control.
+        // These settings match the most common Arduino Serial configuration.
+        tty.c_cflag &= ~PARENB;         // No parity
+        tty.c_cflag &= ~CSTOPB;         // 1 stop bit
+        tty.c_cflag &= ~CSIZE;          // Clear data-size bits before setting CS8
+        tty.c_cflag |= CS8;             // 8 data bits per byte
+        tty.c_cflag &= ~CRTSCTS;        // No RTS/CTS hardware flow control
+        tty.c_cflag |= CREAD | CLOCAL;  // Enable receiver; ignore modem control lines
 
-        tty.c_lflag &= ~ICANON;
-        tty.c_lflag &= ~ECHO; // Disable echo
-        tty.c_lflag &= ~ECHOE; // Disable erasure
-        tty.c_lflag &= ~ECHONL; // Disable new-line echo
-        tty.c_lflag &= ~ISIG; // Disable interpretation of INTR, QUIT and SUSP
-        tty.c_iflag &= ~(IXON | IXOFF | IXANY); // Turn off s/w flow ctrl
-        tty.c_iflag &= ~(IGNBRK|BRKINT|PARMRK|ISTRIP|INLCR|IGNCR|ICRNL); // Disable any special handling of received bytes
+        // Disable all line-discipline processing (raw mode).
+        tty.c_lflag &= ~ICANON;  // Non-canonical (no line-by-line buffering)
+        tty.c_lflag &= ~ECHO;    // No echo of received characters
+        tty.c_lflag &= ~ECHOE;   // No erase character echo
+        tty.c_lflag &= ~ECHONL;  // No newline echo
+        tty.c_lflag &= ~ISIG;    // Do not generate signals for INTR/QUIT/SUSP
 
-        tty.c_oflag &= ~OPOST; // Prevent special interpretation of output bytes (e.g. newline chars)
-        tty.c_oflag &= ~ONLCR; // Prevent conversion of newline to carriage return/line feed
-        // tty.c_oflag &= ~OXTABS; // Prevent conversion of tabs to spaces (NOT PRESENT ON LINUX)
-        // tty.c_oflag &= ~ONOEOT; // Prevent removal of C-d chars (0x004) in output (NOT PRESENT ON LINUX)
+        // Disable software flow control.
+        tty.c_iflag &= ~(IXON | IXOFF | IXANY);
 
-        tty.c_cc[VTIME] = 0;    // don't wait
-        tty.c_cc[VMIN] = 0;
+        // Disable all special input byte handling so bytes pass through unchanged.
+        tty.c_iflag &= ~(IGNBRK|BRKINT|PARMRK|ISTRIP|INLCR|IGNCR|ICRNL);
+
+        // Disable output post-processing so bytes are sent as-is.
+        tty.c_oflag &= ~OPOST;   // No output processing
+        tty.c_oflag &= ~ONLCR;   // No NL→CR/NL translation
+
+        // Non-blocking reads: return immediately with whatever data is available.
+        tty.c_cc[VTIME] = 0;  // No read timeout
+        tty.c_cc[VMIN] = 0;   // Return even if zero bytes are available
 
         speed_t speed;
         switch(baudrate)
@@ -174,90 +183,124 @@ namespace arduino {
                 break;
         }
 
+        // Apply both input and output speeds, then commit all settings atomically.
         cfsetispeed(&tty, speed);
         cfsetospeed(&tty, speed);
-        tcsetattr(serial_port, TCSANOW, &tty);
-
+        tcsetattr(serial_port, TCSANOW, &tty);  // TCSANOW: apply immediately
     }
 
+    /**
+     * Set the device path for the next begin() call.
+     *
+     * @param serialPath Path to the tty device.  Empty string is ignored.
+     * @return Always 0.
+     */
     int LinuxSerial::setPath(std::string serialPath) {
         if (serialPath != "")
             path = serialPath;
         return 0;
     }
 
+    /** Close the serial port file descriptor. */
     void LinuxSerial::end() {
         if (serial_port != -1)
             close(serial_port);
     }
 
+    /**
+     * Return bytes available to read without blocking.
+     *
+     * FIONREAD queries the kernel tty receive queue size without consuming
+     * data.  Returns 0 if the file descriptor is invalid (EBADF) rather than
+     * propagating the error.
+     */
     int LinuxSerial::available(void) {
         int bytes;
         int ret = ioctl(serial_port, FIONREAD, &bytes);
         if (ret == -1) {
-            // ioctl failed, likely due to calling available on an invalid file descriptor (EBADF)
+            // ioctl failed: likely called before begin() opened the port.
             return 0;
         }
         return bytes;
     }
 
+    /** Not implemented; peek requires buffering that this driver does not provide. */
     int LinuxSerial::peek(void) {
         return -1;
     }
 
+    /**
+     * Read one byte from the serial device.
+     *
+     * @return Byte value (0–255) on success, -1 if no data or on error.
+     */
     int LinuxSerial::read(void) {
         uint8_t buf = 0;
         ssize_t n = ::read(serial_port, &buf, 1);
         return (n == 1) ? buf : -1;
     }
 
-    void LinuxSerial::flush(void) {
-    }
+    /** No-op: data is written directly to the tty without userspace buffering. */
+    void LinuxSerial::flush(void) {}
 
+    /**
+     * Write one byte to the serial device.
+     *
+     * @return 1 on success, 0 if the write syscall failed.
+     */
     size_t LinuxSerial::write(uint8_t c) {
         ssize_t n = ::write(serial_port, &c, 1);
         return (n == 1) ? 1 : 0;
     }
 
+    /** @return true if begin() has been called and the port is open. */
     LinuxSerial::operator bool() {
-        // Returns true if the port is ready for use
         return serial_port != -1;
     }
 
 
 
-    //simulated serial for log output:
-    void SimSerial::begin(unsigned long baudrate, uint16_t config) {
-        // Ignore baudrate and config on linux (for now)
-        // FIXME open file descriptor
-    }
+    // --- SimSerial: stdout-backed simulated serial (used as the console) ---
 
-    void SimSerial::end() {
-        // FIXME - close file descriptor
-    }
+    /** No-op: simulated port requires no hardware setup. */
+    void SimSerial::begin(unsigned long baudrate, uint16_t config) {}
 
+    /** No-op: no file descriptor to close. */
+    void SimSerial::end() {}
+
+    /** Always returns 0: stdin is not monitored. */
     int SimSerial::available(void) {
         return 0;
     }
 
+    /** Always returns -1: peek is not supported. */
     int SimSerial::peek(void) {
         return -1;
     }
 
+    /** Always returns -1: reading from stdin is not supported. */
     int SimSerial::read(void) {
         return -1;
     }
 
-    void SimSerial::flush(void) {
-    }
+    /** No-op: stdout is unbuffered at this level. */
+    void SimSerial::flush(void) {}
 
+    /**
+     * Write one byte to stdout.
+     *
+     * Routes Arduino Serial.print/write output to the terminal so that log
+     * messages (via logging.cpp) appear on the console.
+     *
+     * @return Always 1.
+     */
     size_t SimSerial::write(uint8_t c) {
         putchar(c);
         return 1;
     }
 
+    /** Always returns true: the simulated port is always ready. */
     SimSerial::operator bool() {
-        // Returns true if the port is ready for use
         return true;
     }
 }

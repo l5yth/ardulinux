@@ -19,25 +19,28 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 // Stub definitions for arduino::HardwareSPI virtual methods.
-// ArduinoCore-API declares these as non-pure virtual but provides no .cpp,
-// expecting each platform to supply implementations. We provide stubs here so
-// the linker can build the vtable; the concrete LinuxHardwareSPI class
-// overrides all of them.
+//
+// ArduinoCore-API declares these as non-pure virtual (with no out-of-line
+// definition), expecting each platform to supply implementations.  The linker
+// needs a definition for every virtual method to build the vtable, even if
+// LinuxHardwareSPI overrides them all.  These stubs satisfy that requirement
+// and are never called at runtime.
 
 #include "HardwareSPI.h"
 
 namespace arduino {
 
-uint8_t HardwareSPI::transfer(uint8_t) { return 0; }
-uint16_t HardwareSPI::transfer16(uint16_t) { return 0; }
-void HardwareSPI::transfer(void *, size_t) {}
-void HardwareSPI::usingInterrupt(int) {}
-void HardwareSPI::notUsingInterrupt(int) {}
-void HardwareSPI::beginTransaction(SPISettings) {}
-void HardwareSPI::endTransaction() {}
-void HardwareSPI::attachInterrupt() {}
-void HardwareSPI::detachInterrupt() {}
-void HardwareSPI::begin() {}
-void HardwareSPI::end() {}
+// Each stub is a valid (do-nothing) default; LinuxHardwareSPI overrides all.
+uint8_t  HardwareSPI::transfer(uint8_t)           { return 0; }
+uint16_t HardwareSPI::transfer16(uint16_t)         { return 0; }
+void     HardwareSPI::transfer(void *, size_t)     {}
+void     HardwareSPI::usingInterrupt(int)          {}
+void     HardwareSPI::notUsingInterrupt(int)       {}
+void     HardwareSPI::beginTransaction(SPISettings){}
+void     HardwareSPI::endTransaction()             {}
+void     HardwareSPI::attachInterrupt()            {}
+void     HardwareSPI::detachInterrupt()            {}
+void     HardwareSPI::begin()                      {}
+void     HardwareSPI::end()                        {}
 
 } // namespace arduino

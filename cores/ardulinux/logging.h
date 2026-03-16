@@ -24,32 +24,67 @@
 
 namespace arduino {
 
-// FIXME - move somewhere else and add gcc arg type hints
-
+/**
+ * Log severity levels, ordered from least to most verbose.
+ *
+ * Higher values are noisier; a production build typically enables LogInfo
+ * and above while debug builds enable LogDebug or LogVerbose.
+ */
 enum LogLevel { LogVerbose, LogDebug, LogInfo, LogWarn, LogError };
 
+/**
+ * Subsystem identifiers used to tag log messages.
+ *
+ * SysCurrent (0) reuses the last explicitly set subsystem, allowing a series
+ * of related log calls to share a tag without repeating it.  Application
+ * code should use IDs >= SysApp0 to avoid collisions with library subsystems.
+ */
 enum LogSystem {
-  SysCurrent = 0, // The last set current subsystem
-  SysUnknown,
-  SysCore,
-  SysGPIO,
-  SysI2C,
-  SysSPI,
-  SysInterrupt,
-  SysWifi,
+  SysCurrent = 0, ///< Inherit the most recently used subsystem tag
+  SysUnknown,     ///< Unclassified messages
+  SysCore,        ///< Core ArduLinux runtime
+  SysGPIO,        ///< GPIO subsystem
+  SysI2C,         ///< I²C subsystem
+  SysSPI,         ///< SPI subsystem
+  SysInterrupt,   ///< Interrupt / ISR subsystem
+  SysWifi,        ///< Wi-Fi subsystem
 
-  // Ids greater than 1000 are used for application specific purposes
-  SysApp0 = 1000
+  SysApp0 = 1000  ///< First ID reserved for application-specific subsystems
 };
 
+/**
+ * Log a formatted message from a specific subsystem.
+ *
+ * @param sys   Subsystem that produced the message (see LogSystem).
+ * @param level Severity of the message (see LogLevel).
+ * @param fmt   printf-style format string.
+ * @param ...   Arguments for the format string.
+ */
 void log(LogSystem sys, LogLevel level, const char *fmt, ...)
     __attribute__((format(printf, 3, 4)));
+
+/**
+ * Log a formatted message using an already-expanded va_list.
+ *
+ * This is the common implementation target called by log() and the log_X()
+ * convenience wrappers after they unpack their variadic arguments.
+ *
+ * @param sys   Subsystem tag.
+ * @param level Severity level.
+ * @param fmt   printf-style format string.
+ * @param args  Caller-owned va_list (not modified by this function).
+ */
 void logv(LogSystem sys, LogLevel level, const char *fmt, va_list args);
 
+/** Log at LogError level using SysCurrent. @see log() */
 void log_e(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
+/** Log at LogWarn level using SysCurrent. @see log() */
 void log_w(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
+/** Log at LogInfo level using SysCurrent. @see log() */
 void log_i(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
+/** Log at LogDebug level using SysCurrent. @see log() */
 void log_d(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
+/** Log at LogVerbose level using SysCurrent. @see log() */
 void log_v(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
 
 }

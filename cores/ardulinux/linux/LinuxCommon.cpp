@@ -27,33 +27,58 @@
 #include <time.h>
 #include <unistd.h>
 
+/**
+ * Suspend execution for at least @p milliSec milliseconds.
+ *
+ * When real hardware is present, gpioIdle() is called before sleeping so that
+ * ISRs are polled even during long delays.  usleep() is used (rather than
+ * nanosleep) because it yields the CPU to other threads.
+ *
+ * @param milliSec Delay duration in milliseconds.
+ */
 void delay(unsigned long milliSec) {
-  //timespec ts{.tv_sec = (time_t)(milliSec / 1000),
-  //            .tv_nsec = (long)(milliSec % 1000) * 1000L * 1000L};
-  //nanosleep(&ts, NULL);
   if (realHardware)
-    gpioIdle();
-  usleep(milliSec * 1000); 
+    gpioIdle();  // Poll ISRs so hardware events are not missed during delay
+  usleep(milliSec * 1000);
 }
 
+/**
+ * Suspend execution for at least @p usec microseconds.
+ *
+ * usleep() is preferred over nanosleep() because it allows other threads to
+ * run during the wait.
+ *
+ * @param usec Delay duration in microseconds.
+ */
 void delayMicroseconds(unsigned int usec) {
-  usleep(usec); // better than nanosleep because it lets other threads run
+  usleep(usec);
 }
 
+/** Cooperatively yield the CPU to other runnable threads. */
 void yield(void) { sched_yield(); }
 
+/** Return a random number in [0, max). */
 long random(long max) { return random(0, max); }
 
-long random(long min, long max) { 
+/**
+ * Return a random number in [@p min, @p max).
+ *
+ * Returns @p min immediately when the range is empty (min >= max) to avoid
+ * division by zero in the modulo operation.
+ */
+long random(long min, long max) {
   if (min >= max) {
     return min;
   }
-  return rand() % (max - min) + min; 
+  return rand() % (max - min) + min;
 }
 
+/** Seed the pseudo-random number generator. @see random() */
 void randomSeed(unsigned long s) { srand(s); }
 
+/** Not implemented; Linux has no PWM tone API at this level. */
 void tone(uint8_t _pin, unsigned int frequency, unsigned long duration)
     NOT_IMPLEMENTED("tone");
 
+/** Not implemented. */
 void noTone(uint8_t _pin) NOT_IMPLEMENTED("noTone");

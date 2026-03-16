@@ -177,12 +177,23 @@ public:
     }
 
 private:
-    /** Called by refreshState()
-   * 
-   * If an ISR is attached to this GPIO, call if the speicifed PinStatus matches */
+    /**
+     * Invoke the attached ISR if the edge/level condition is satisfied.
+     *
+     * Compares @p oldState (previous pin value) with @p newState (current
+     * value) against the registered isrPinStatus trigger mode:
+     *  - HIGH/LOW   — level-triggered; fires whenever the pin is at that level
+     *  - RISING     — fires on LOW→HIGH transition
+     *  - FALLING    — fires on HIGH→LOW transition
+     *  - CHANGE     — fires on any state change
+     *
+     * @param oldState Pin value before the current poll cycle.
+     * @param newState Pin value after the current poll cycle.
+     */
     void callISR(PinStatus oldState, PinStatus newState)
     {
         auto s = isrPinStatus;
+        // Evaluate all trigger conditions; non-zero PinStatus values are truthy.
         if ((s == HIGH && newState) ||
             (s == LOW && !newState) ||
             (s == RISING && !oldState && newState) ||
@@ -196,19 +207,22 @@ private:
         }
     }
 
-    /** Called to read from a pin and if the pin has changed state possibly call an ISR, also changes
-   * the mirrored copy of state that is returned for calls to readPin().
-   * 
-   * If an ISR is attached to this GPIO, call if the speicifed PinStatus matches */
+    /**
+     * Read the current hardware state, update the cached status, and trigger
+     * any attached ISR if the edge/level condition is met.
+     *
+     * Skipped when the pin is configured as OUTPUT because output pins do not
+     * receive external signals and their state is set by writePin() instead.
+     */
     void refreshState()
     {
         if (mode != OUTPUT)
         {
             auto newState = readPinHardware();
             if(!silent)
-                log(SysGPIO, LogDebug, "refreshState(%s, %d)", getName(), newState);            
+                log(SysGPIO, LogDebug, "refreshState(%s, %d)", getName(), newState);
             auto oldState = status;
-            status = newState;
+            status = newState;  // Update cached value before calling ISR
             callISR(oldState, newState);
         }
     }
@@ -222,16 +236,57 @@ protected:
     }
 };
 
+/**
+ * A software-only GPIO pin that never touches real hardware.
+ *
+ * Used as the default for every slot in the pin table until the application
+ * replaces specific pins with LinuxGPIOPin instances via gpioBind().
+ * Reads return the last written value; writes are silently accepted.
+ */
 class SimGPIOPin : public GPIOPin
 {
 public:
+    /** Construct a simulated pin with the given Arduino pin number and name. */
     SimGPIOPin(pin_size_t n, String _name) : GPIOPin(n, _name) {}
 };
 
+/**
+ * Initialise the global GPIO pin table.
+ *
+ * Allocates @p _num_gpios SimGPIOPin instances indexed 0 … _num_gpios-1.
+ * Must be called once before any GPIO API function.  Calling it a second
+ * time appends additional SimGPIOPin instances without resetting existing
+ * ones — do not call more than once per process.
+ *
+ * @param _num_gpios Number of GPIO slots to allocate (default: 64).
+ */
 void gpioInit(int _num_gpios = 64);
+
+/**
+ * Poll all GPIO pins that have ISRs attached.
+ *
+ * Called from the main loop (and from delay() when real hardware is present)
+ * to simulate interrupt-driven behaviour.  For each pin with an attached ISR,
+ * reads the current hardware state and fires the ISR if the edge condition is
+ * met.
+ */
 void gpioIdle();
 
-/// Assign an implementation to a specific pin
+/**
+ * Replace the SimGPIOPin at slot p->getPinNum() with a real hardware pin.
+ *
+ * Takes ownership of @p p.  Also sets the global @p realHardware flag, which
+ * disables the 100 ms loop sleep in ardulinux_main() so ISRs are polled at
+ * full speed.
+ *
+ * @param p Heap-allocated GPIOPinIf implementation to install.
+ */
 void gpioBind(GPIOPinIf *p);
 
+/**
+ * True once at least one real hardware pin has been registered via gpioBind().
+ *
+ * When false, the main loop adds a 100 ms sleep to avoid burning CPU on
+ * pure-simulation workloads.
+ */
 extern bool realHardware;
