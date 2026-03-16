@@ -3,5 +3,9 @@
   "description": "ArduLinux - Arduino API for Linux",
   "version": "0.2.0",
   "system": "*",
-  "url": "https://github.com/l5yth/ardulinux"
+  "url": "https://github.com/l5yth/ardulinux",
+  "keywords": ["arduino", "linux"],
+  "frameworks": ["arduino"],
+  "platforms": ["linux"],
+  "license": "LGPL-2.1-or-later"
 }
