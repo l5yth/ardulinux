@@ -10,7 +10,7 @@ ArduLinux is a continuation of [portduino](https://github.com/geeksville/framewo
 ArduLinux is a clean-room continuation, not a fork. The key differences:
 
 - **No vendored dependencies**: [ArduinoCore-API](https://github.com/arduino/ArduinoCore-API) and [WiFi](https://github.com/arduino-libraries/WiFi) are upstream git submodules, not copied or patched source trees.
-- **PlatformIO via upstream platform-native**: no custom platform registry entry or private package mirror required.
+- **Self-contained PlatformIO platform**: ships its own `platform.json` and SCons builder; no separate platform-native dependency or private package mirror required.
 - **Smaller surface area**: dead code, unused variants, and IDE project files removed.
 
 ## Requirements
@@ -40,17 +40,18 @@ cmake --build build
 
 When libgpiod is detected, Linux hardware GPIO and I2C support is compiled in automatically. Without it, the build falls back to simulated GPIO and I2C only.
 
-## Using as a framework (PlatformIO)
+## Using as a platform (PlatformIO)
 
 Add to your `platformio.ini`:
 
 ```ini
-[env:native]
-platform = https://github.com/platformio/platform-native
+[env:ardulinux]
+platform = git+https://github.com/l5yth/ardulinux.git
 framework = arduino
-board = linux_hardware
-build_flags = ${env.build_flags} -O0 -lgpiod -li2c
+build_flags = ${env.build_flags} -O0
 ```
+
+libgpiod and libi2c are detected automatically by the platform builder via `pkg-config`. No extra flags are required.
 
 ## Writing an application
 
