@@ -1,6 +1,6 @@
-# Meshduino
+# ArduLinux
 
-Meshduino is a continuation of [portduino](https://github.com/geeksville/framework-portduino) and implements the Arduino API as a Linux user-space library, allowing firmware written for embedded targets (nRF52, ESP32, AVR, etc.) to build and run on Linux without modification. Applications get access to real hardware - GPIO via libgpiod, SPI via spidev, I2C via i2c-dev, Serial via POSIX file descriptors - or fully simulated devices for CI and development.
+ArduLinux is a continuation of [portduino](https://github.com/geeksville/framework-portduino) and implements the Arduino API as a Linux user-space library, allowing firmware written for embedded targets (nRF52, ESP32, AVR, etc.) to build and run on Linux without modification. Applications get access to real hardware - GPIO via libgpiod, SPI via spidev, I2C via i2c-dev, Serial via POSIX file descriptors - or fully simulated devices for CI and development.
 
 ## Requirements
 
@@ -43,13 +43,13 @@ build_flags = ${env.build_flags} -O0 -lgpiod -li2c
 
 ## Writing an application
 
-Implement the standard Arduino `setup()` and `loop()` functions. Optionally define `meshduinoSetup()` to bind real hardware before `setup()` runs:
+Implement the standard Arduino `setup()` and `loop()` functions. Optionally define `ardulinuxSetup()` to bind real hardware before `setup()` runs:
 
 ```cpp
 #include "Arduino.h"
 #include "linux/gpio/LinuxGPIOPin.h"
 
-void meshduinoSetup() {
+void ardulinuxSetup() {
     // Bind pin 7 to GPIO chip "gpiochip0", line "PIN_7"
     gpioBind(new LinuxGPIOPin(7, "gpiochip0", "PIN_7"));
 }
@@ -64,7 +64,7 @@ void loop() {
 }
 ```
 
-Without `meshduinoSetup()`, all pins default to simulated. The VFS is mounted at `~/.meshduino/default/` by default; pass `--fsdir <path>` to override or `--erase` to wipe it on startup.
+Without `ardulinuxSetup()`, all pins default to simulated. The VFS is mounted at `~/.ardulinux/default/` by default; pass `--fsdir <path>` to override or `--erase` to wipe it on startup.
 
 ## License
 
