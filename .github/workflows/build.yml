@@ -9,6 +9,7 @@ on:
       - "cores/**"
       - "CMakeLists.txt"
       - "example/**"
+      - "tests/**"
   pull_request:
     branches:
       - main
@@ -17,6 +18,7 @@ on:
       - "cores/**"
       - "CMakeLists.txt"
       - "example/**"
+      - "tests/**"
   workflow_dispatch:
 
 jobs:
@@ -42,3 +44,39 @@ jobs:
 
       - name: Smoke test
         run: ./build/ArduLinux --help
+
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y cmake libgpiod-dev libi2c-dev pkg-config lcov
+
+      - name: Configure (Coverage)
+        run: cmake -B build-coverage -DCMAKE_BUILD_TYPE=Coverage
+
+      - name: Build
+        run: cmake --build build-coverage --parallel
+
+      - name: Run tests
+        run: ctest --test-dir build-coverage --output-on-failure
+
+      - name: Generate coverage report
+        run: |
+          lcov --capture --directory build-coverage --output-file coverage.info
+          lcov --remove coverage.info '/usr/*' '*/Catch2/*' '*/tests/*' \
+               --output-file coverage.info
+          lcov --list coverage.info
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: coverage.info
+          token: ${{ secrets.CODECOV_TOKEN }}
