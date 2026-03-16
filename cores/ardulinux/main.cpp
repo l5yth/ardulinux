@@ -118,7 +118,7 @@ int rmrf(char *path)
 static struct argp argp = {options, parse_opt, args_doc, doc, children, 0, 0};
 
 /**
- * call from portuinoCustomInit() if you want to add custom command line
+ * call from ardulinuxCustomInit() if you want to add custom command line
  * arguments
  */
 void ardulinuxAddArguments(const struct argp_child &child,

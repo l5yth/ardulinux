@@ -141,7 +141,9 @@ gpiod_line *LinuxGPIOPin::getLine(const char *chipLabel, const char *linuxPinNam
 	settings = gpiod_line_settings_new();
 	gpiod_line_settings_set_direction(settings, GPIOD_LINE_REQUEST_DIRECTION_AS_IS);
 	line_cfg = gpiod_line_config_new();
-	gpiod_line_config_add_line_settings(line_cfg, &offset, 1, settings);
+	int cfg_ret = gpiod_line_config_add_line_settings(line_cfg, &offset, 1, settings);
+	if (cfg_ret != 0)
+		log(SysGPIO, LogError, "gpiod_line_config_add_line_settings failed: %d", cfg_ret);
 	req_cfg = gpiod_request_config_new();
 	gpiod_request_config_set_consumer(req_cfg, consumer);
 	line = gpiod_chip_request_lines(chip, req_cfg, line_cfg);
@@ -221,7 +223,9 @@ gpiod_line *LinuxGPIOPin::getLine(const char *chipLabel, const int linuxPinNum) 
 	settings = gpiod_line_settings_new();
 	gpiod_line_settings_set_direction(settings, GPIOD_LINE_REQUEST_DIRECTION_AS_IS);
 	line_cfg = gpiod_line_config_new();
-	gpiod_line_config_add_line_settings(line_cfg, &offset, 1, settings);
+	int cfg_ret = gpiod_line_config_add_line_settings(line_cfg, &offset, 1, settings);
+	if (cfg_ret != 0)
+		log(SysGPIO, LogError, "gpiod_line_config_add_line_settings failed: %d", cfg_ret);
 	req_cfg = gpiod_request_config_new();
 	gpiod_request_config_set_consumer(req_cfg, consumer);
 	line = gpiod_chip_request_lines(chip, req_cfg, line_cfg);

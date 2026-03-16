@@ -23,7 +23,6 @@
 #include <sys/ioctl.h>
 #include <linux/i2c.h>
 #include "LinuxHardwareI2C.h"
-#include <iostream>
 
 extern "C"
 {
