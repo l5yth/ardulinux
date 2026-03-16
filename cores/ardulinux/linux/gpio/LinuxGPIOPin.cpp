@@ -200,7 +200,7 @@ gpiod_line *LinuxGPIOPin::getLine(const char *chipLabel, const char *linuxPinNam
   }
   free(entries);
 #endif
-  assert(0); // FIXME throw
+  throw std::invalid_argument("GPIO line not found");
 }
 
 /**
@@ -280,7 +280,7 @@ gpiod_line *LinuxGPIOPin::getLine(const char *chipLabel, const int linuxPinNum) 
   }
   free(entries);
 #endif
-  assert(0); // FIXME throw
+  throw std::invalid_argument("GPIO line not found");
 }
 
 /**

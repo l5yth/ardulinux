@@ -206,17 +206,17 @@ namespace arduino {
     }
 
     int LinuxSerial::read(void) {
-        int buf = 0;
-        ::read(serial_port, &buf, 1);
-        return buf;
+        uint8_t buf = 0;
+        ssize_t n = ::read(serial_port, &buf, 1);
+        return (n == 1) ? buf : -1;
     }
 
     void LinuxSerial::flush(void) {
     }
 
     size_t LinuxSerial::write(uint8_t c) {
-        ::write(serial_port, &c, 1);
-        return 1;
+        ssize_t n = ::write(serial_port, &c, 1);
+        return (n == 1) ? 1 : 0;
     }
 
     LinuxSerial::operator bool() {
