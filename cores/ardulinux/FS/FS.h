@@ -21,8 +21,6 @@
 #ifndef FS_H
 #define FS_H
 
-#include <cstdarg>
-#include <cstdio>
 #include <memory>
 #include <Arduino.h>
 
@@ -80,15 +78,6 @@ public:
     boolean isDirectory(void);
     File openNextFile(const char* mode = FILE_READ);
     void rewindDirectory(void);
-    size_t printf(const char *format, ...) __attribute__((format(printf, 2, 3))) {
-        va_list args;
-        va_start(args, format);
-        char buf[256];
-        int n = vsnprintf(buf, sizeof(buf), format, args);
-        va_end(args);
-        if (n > 0) write((const uint8_t *)buf, (size_t)n);
-        return (size_t)(n > 0 ? n : 0);
-    }
 
 protected:
     FileImplPtr _p;

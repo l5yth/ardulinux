@@ -16,10 +16,20 @@ assert isdir(ARDULINUX_DIR), "ArduLinux core not found: "  + ARDULINUX_DIR
 # Create a patched copy of ArduinoCore-API without Print.h so the include
 # search falls through to our platform Print.h (which adds printf).
 # This avoids forking ArduinoCore-API while keeping Print extensible.
-API_DIR = join(env.subst("$PROJECT_BUILD_DIR"), "patched_api")
-if not exists(API_DIR):
+API_DIR  = join(env.subst("$PROJECT_BUILD_DIR"), "patched_api")
+SENTINEL = join(API_DIR, ".patched_from")
+needs_rebuild = (
+    not exists(API_DIR) or
+    not exists(SENTINEL) or
+    open(SENTINEL).read().strip() != _API_DIR
+)
+if needs_rebuild:
+    if exists(API_DIR):
+        shutil.rmtree(API_DIR)
     shutil.copytree(_API_DIR, API_DIR)
     os.remove(join(API_DIR, "Print.h"))
+    with open(SENTINEL, "w") as f:
+        f.write(_API_DIR)
 
 # Detect libgpiod via pkg-config; fall back gracefully if pkg-config is absent.
 try:
@@ -31,7 +41,7 @@ try:
 except FileNotFoundError:
     has_libgpiod = False
 
-cppdefines = ["HOST", ("ARDUINO", "10810")]
+cppdefines = ["HOST", ("ARDUINO", 10810)]
 cpppath    = [
     ARDULINUX_DIR,          # platform Print.h shadows ArduinoCore-API's
     join(ARDULINUX_DIR, "FS"),

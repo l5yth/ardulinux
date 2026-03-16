@@ -112,4 +112,3 @@ class Print
 };
 
 }
-using namespace arduino;
