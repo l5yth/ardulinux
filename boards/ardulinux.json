@@ -1,0 +1,15 @@
+{
+  "build": {
+    "core": "ardulinux",
+    "mcu": "linux",
+    "f_cpu": "1000000000L"
+  },
+  "frameworks": ["arduino"],
+  "name": "ArduLinux",
+  "url": "https://github.com/l5yth/ardulinux",
+  "vendor": "ArduLinux",
+  "upload": {
+    "maximum_ram_size": 0,
+    "maximum_size": 0
+  }
+}
