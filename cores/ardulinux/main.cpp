@@ -84,7 +84,10 @@ static const char args_doc[] = "";
  * @param state  argp parser state; @c state->name is the argv[0] basename.
  */
 static void print_version(FILE *stream, struct argp_state *state) {
-    const char *name = ardulinuxAppName ? ardulinuxAppName : state->name;
+    // argp may call this hook with state == NULL in some internal paths,
+    // so guard before dereferencing state->name.
+    const char *name = ardulinuxAppName ? ardulinuxAppName
+                     : (state ? state->name : "ardulinux");
     fprintf(stream, "%s %s\n", name, ardulinuxAppVersion);
 }
 

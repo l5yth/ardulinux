@@ -37,8 +37,12 @@ extern const char *ardulinuxAppDescription;
  * @c "<appname> <version>".
  *
  * The platform default is taken from the @c FIRMWARE_VERSION preprocessor
- * define if it is set at compile time (pass @c -DFIRMWARE_VERSION="1.2.3" to
- * CMake/the compiler), otherwise it falls back to @c "unknown".
+ * define if it is set at compile time, otherwise it falls back to @c "unknown".
+ * @c FIRMWARE_VERSION must be a string literal — pass it with escaped inner
+ * quotes in CMake:
+ * @code
+ * target_compile_definitions(myapp PRIVATE "FIRMWARE_VERSION=\"1.2.3\"")
+ * @endcode
  *
  * Override the weak default in your application source:
  *
