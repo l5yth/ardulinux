@@ -30,7 +30,7 @@ using namespace fs;
  *  3. If the path looks like a mount-point directory, try opendir().
  *  4. Otherwise return an empty FileImplPtr (evaluates to false).
  *
- * The real path is _mountpoint + path, e.g. ~/.ardulinux/default/data/x.txt.
+ * The real path is _mountpoint + path, e.g. ~/.local/share/ardulinux/default/data/x.txt.
  */
 FileImplPtr VFSImpl::open(const char* path, const char* mode)
 {

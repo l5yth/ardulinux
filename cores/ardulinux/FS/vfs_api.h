@@ -34,7 +34,7 @@ class VFSFileImpl;
  * All paths are relative to the mountpoint set by FSImpl::mountpoint().  The
  * mountpoint is prepended to every path before calling POSIX functions, so
  * application code uses "/data/config.json" and the real path is something
- * like "~/.ardulinux/default/data/config.json".
+ * like "~/.local/share/ardulinux/default/data/config.json".
  */
 class VFSImpl : public FSImpl
 {
