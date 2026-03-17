@@ -50,13 +50,13 @@ TEST_CASE("yield does not crash", "[common]") {
 
 // ─── random ──────────────────────────────────────────────────────────────────
 
-TEST_CASE("random(max) returns a value in [0, max)", "[common]") {
+TEST_CASE("random(max) returns a value between 0 and max-1 inclusive", "[common]") {
     long r = random(100);
     CHECK(r >= 0);
     CHECK(r < 100);
 }
 
-TEST_CASE("random(min, max) returns a value in [min, max)", "[common]") {
+TEST_CASE("random(min, max) returns a value between min and max-1 inclusive", "[common]") {
     long r = random(5, 15);
     CHECK(r >= 5);
     CHECK(r < 15);
