@@ -24,32 +24,76 @@
 #include <stdio.h>
 
 
+/**
+ * Map a numeric radix to the corresponding printf format string.
+ *
+ * Only octal (8), decimal (10), and hexadecimal (16) are supported.
+ *
+ * @param radix  Numeric base: 8, 10, or 16.
+ * @return printf format string ("%o", "%d", or "%X").
+ * @throws std::runtime_error for unsupported radix values.
+ */
 std::string radixToFmtString(int const radix)
 {
-    if (radix == 8)  return std::string("%o");
+    if (radix == 8)       return std::string("%o");
     else if (radix == 10) return std::string("%d");
     else if (radix == 16) return std::string("%X");
     else throw std::runtime_error("Invalid radix.");
 }
 
+/**
+ * Convert a signed integer to a string in the given radix.
+ *
+ * Arduino compatibility shim; the standard library itoa() is not available
+ * on all platforms.
+ *
+ * @param value  Value to convert.
+ * @param str    Output buffer (caller must ensure sufficient space).
+ * @param radix  Numeric base: 8, 10, or 16.
+ * @return @p str.
+ */
 char * itoa(int value, char * str, int radix)
 {
     sprintf(str, radixToFmtString(radix).c_str(), value);
     return str;
 }
 
+/**
+ * Convert a signed long to a string in the given radix.
+ *
+ * @param value  Value to convert.
+ * @param str    Output buffer.
+ * @param radix  Numeric base: 8, 10, or 16.
+ * @return @p str.
+ */
 char * ltoa(long value, char * str, int radix)
 {
     sprintf(str, radixToFmtString(radix).c_str(), value);
     return str;
 }
 
+/**
+ * Convert an unsigned integer to a string in the given radix.
+ *
+ * @param value  Value to convert.
+ * @param str    Output buffer.
+ * @param radix  Numeric base: 8, 10, or 16.
+ * @return @p str.
+ */
 char * utoa(unsigned value, char *str, int radix)
 {
     sprintf(str, radixToFmtString(radix).c_str(), value);
     return str;
 }
 
+/**
+ * Convert an unsigned long to a string in the given radix.
+ *
+ * @param value  Value to convert.
+ * @param str    Output buffer.
+ * @param radix  Numeric base: 8, 10, or 16.
+ * @return @p str.
+ */
 char * ultoa(unsigned long value, char * str, int radix)
 {
     sprintf(str, radixToFmtString(radix).c_str(), value);

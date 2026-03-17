@@ -21,6 +21,17 @@
 
 using namespace fs;
 
+/**
+ * Open a file or directory within the VFS.
+ *
+ * Resolution order:
+ *  1. If stat() succeeds and the entry is REG or DIR, open it normally.
+ *  2. If stat() fails but mode allows creation (not 'r'), create the file.
+ *  3. If the path looks like a mount-point directory, try opendir().
+ *  4. Otherwise return an empty FileImplPtr (evaluates to false).
+ *
+ * The real path is _mountpoint + path, e.g. ~/.ardulinux/default/data/x.txt.
+ */
 FileImplPtr VFSImpl::open(const char* path, const char* mode)
 {
     if(!_mountpoint) {
@@ -33,6 +44,7 @@ FileImplPtr VFSImpl::open(const char* path, const char* mode)
         return FileImplPtr();
     }
 
+    // Build the real (host) path by prepending the mount point.
     char * temp = (char *)malloc(strlen(path)+strlen(_mountpoint)+2);
     if(!temp) {
         log_e("malloc failed");
@@ -42,8 +54,8 @@ FileImplPtr VFSImpl::open(const char* path, const char* mode)
     sprintf(temp,"%s%s", _mountpoint, path);
 
     struct stat st;
-    //file lound
     if(!stat(temp, &st)) {
+        // File/directory exists; only allow regular files and directories.
         free(temp);
         if (S_ISREG(st.st_mode) || S_ISDIR(st.st_mode)) {
             return std::make_shared<VFSFileImpl>(this, path, mode);
@@ -52,13 +64,13 @@ FileImplPtr VFSImpl::open(const char* path, const char* mode)
         return FileImplPtr();
     }
 
-    //file not found but mode permits creation
+    // stat() failed (file not found); allow creation for non-read modes.
     if(mode && mode[0] != 'r') {
         free(temp);
         return std::make_shared<VFSFileImpl>(this, path, mode);
     }
 
-    //try to open this as directory (might be mount point)
+    // Last resort: try opening as a directory (e.g. mount point itself).
     DIR * d = opendir(temp);
     if(d) {
         closedir(d);
@@ -395,15 +407,19 @@ FileImplPtr VFSFileImpl::openNextFile(const char* mode)
     }
     struct dirent *file = readdir(_d);
     if(file == NULL) {
-        return FileImplPtr();
+        return FileImplPtr();  // End of directory
     }
+    // Skip entries that are neither regular files nor directories (e.g.
+    // symlinks, devices).  Tail-recursion advances to the next entry without
+    // resetting the directory iterator.
     if(file->d_type != DT_REG && file->d_type != DT_DIR) {
         return openNextFile(mode);
     }
+    // Build the full VFS-relative path: parent dir + "/" + entry name.
     String fname = String(file->d_name);
     String name = String(_path);
     if(!fname.startsWith("/") && !name.endsWith("/")) {
-        name += "/";
+        name += "/";  // Ensure exactly one separator between parent and child
     }
     name += fname;
 

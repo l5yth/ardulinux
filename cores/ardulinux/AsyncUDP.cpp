@@ -23,7 +23,12 @@
 #include <sys/socket.h>
 #include "Utility.h"
 
+/** How long the loopback watchdog waits before giving up (milliseconds). */
 #define LOOP_TIMER_CHECK_TIMEOUT_MS 100
+
+// libuv C-callback adapters: libuv requires plain function pointers, so these
+// free functions extract the AsyncUDP* stored in handle->data and forward to
+// the corresponding member function.
 
 void _asyncudp_async_cb(uv_async_t *handle) {
     AsyncUDP *udp = (AsyncUDP *)handle->data;
@@ -41,6 +46,9 @@ AsyncUDP::AsyncUDP() {
     _fd = 0;
     _quit.store(false);
 
+    // Initialise the event loop and register the cross-thread wakeup handle.
+    // The async handle allows writeTo() (called from the Arduino thread) to
+    // wake the I/O thread when a new send task is enqueued.
     uv_loop_init(&_loop);
     _async.data = this;
     uv_async_init(&_loop, &_async, _asyncudp_async_cb);
@@ -49,8 +57,9 @@ AsyncUDP::AsyncUDP() {
 }
 
 AsyncUDP::~AsyncUDP() {
+    // Signal the loop thread to stop, then wait for it to finish.
     _quit.store(true);
-    uv_async_send(&_async);
+    uv_async_send(&_async);  // Wake the loop so it sees _quit == true
     _ioThread.join();
     uv_loop_close(&_loop);
     if (_fd > 0) {
@@ -60,6 +69,7 @@ AsyncUDP::~AsyncUDP() {
 }
 
 asyncUDPSendTask::asyncUDPSendTask(uint8_t *data, size_t len, IPAddress addr, uint16_t port) {
+    // Copy the payload so the caller can free their buffer immediately.
     this->data = (uint8_t*)malloc(len);
     memcpy(this->data, data, len);
     this->len = len;
@@ -67,11 +77,13 @@ asyncUDPSendTask::asyncUDPSendTask(uint8_t *data, size_t len, IPAddress addr, ui
     this->port = port;
 }
 
+/** libuv buffer allocation callback: provide a fresh heap buffer for each received datagram. */
 void _asyncudp_alloc_buffer_cb(uv_handle_t *handle, size_t suggested_size, uv_buf_t *buf) {
     buf->base = (char *)malloc(suggested_size);
     buf->len = suggested_size;
 }
 
+/** libuv UDP read callback adapter: forwards to the AsyncUDP member function. */
 void _asyncudp_on_read_cb(uv_udp_t *handle, ssize_t nread, const uv_buf_t *buf, const struct sockaddr *addr, unsigned flags) {
     AsyncUDP *udp = (AsyncUDP *)handle->data;
     udp->_DO_NOT_CALL_uv_on_read(handle, nread, buf, addr, flags);
@@ -80,21 +92,27 @@ void _asyncudp_on_read_cb(uv_udp_t *handle, ssize_t nread, const uv_buf_t *buf, 
 void AsyncUDP::_DO_NOT_CALL_uv_on_read(uv_udp_t *handle, ssize_t nread, const uv_buf_t *buf, const struct sockaddr *addr, unsigned flags) {
     if (nread <= 0) {
         if (_waitingToBeLooped) {
-            // we are waiting to receive a packet yet we just exhausted the receive buffer.
+            // We are waiting to receive a packet yet we just exhausted the receive buffer.
             // This can happen if we are unlucky and this happens to run while we were sending a packet.
             // Or this happens because the receive buffer was full and the packet we are waiting for was dropped.
             _emptiedBuffer = true;
         }
+        // libuv allocates a buffer for every read attempt via _asyncudp_alloc_buffer_cb.
+        // When nread <= 0 (no data or error) the buffer is still allocated and must be freed.
+        free(buf->base);
         return;
     }
     _handlerMutex.lock();
     auto h = _handler;
     _handlerMutex.unlock();
     if (_waitingToBeLooped && nread == _waitingToBeLooped->len && memcmp(buf->base, _waitingToBeLooped->data, nread) == 0) {
+        // This packet matches what we sent — it is our own loopback copy.
+        // Suppress it from the handler and unblock the send queue.
         _waitingToBeLooped = std::unique_ptr<asyncUDPSendTask>();
         uv_timer_stop(&_timer);
         _attemptWrite();
     } else {
+        // Not a loopback copy; deliver to the application handler.
         if (h) {
             AsyncUDPPacket packet((uint8_t*)buf->base, nread);
             h(packet);
@@ -112,14 +130,15 @@ bool AsyncUDP::listenMulticast(const IPAddress addr, uint16_t port, uint8_t ttl)
     }
     _socket.data = this;
 
+    // Create a raw non-blocking socket outside libuv so we can set socket
+    // options before handing it to the uv_udp handle via uv_udp_open().
     _fd = socket(AF_INET, SOCK_DGRAM|SOCK_NONBLOCK|SOCK_CLOEXEC, 0);
     if (_fd < 0) {
         return false;
     }
 
-    // We want multiple distinct processes to all be able to join the same multicast mesh.
-
-    // SO_REUSEADDR and SO_REUSEPORT allows multiple instances to loadbalance incoming UDP packets.
+    // SO_REUSEADDR and SO_REUSEPORT allow multiple processes on the same host
+    // to bind to the same multicast port and each receive all packets.
     int opt = 1;
     if (setsockopt(_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(int)) < 0) {
         // FIXME: show a message, this is not a killer but it will prevent multiple instances to share the same port
@@ -137,14 +156,18 @@ bool AsyncUDP::listenMulticast(const IPAddress addr, uint16_t port, uint8_t ttl)
         _fd = 0;
         return true;
     }
-    
+
+    // Limit how far multicast packets travel; TTL=1 means LAN only.
     opt = ttl;
     if (setsockopt(_fd, IPPROTO_IP, IP_MULTICAST_TTL, &opt, sizeof(opt)) < 0) {
         close(_fd);
         _fd = 0;
         return true;
     }
-    // Have to enable loopback to get multiple processes to inter-communicate
+    // Enable multicast loopback so that multiple processes on the same host
+    // all receive packets sent to the group (including our own sends).
+    // The loopback suppression logic in _DO_NOT_CALL_uv_on_read() prevents
+    // the sender from re-processing its own packets.
     opt = 1;
     if (setsockopt(_fd, IPPROTO_IP, IP_MULTICAST_LOOP, &opt, sizeof(opt)) < 0) {
         close(_fd);
@@ -152,6 +175,7 @@ bool AsyncUDP::listenMulticast(const IPAddress addr, uint16_t port, uint8_t ttl)
         return true;
     }
 
+    // Hand the raw socket to libuv for async I/O management.
     if (uv_udp_open(&_socket, _fd) < 0) {
         close(_fd);
         _fd = 0;
@@ -182,6 +206,7 @@ bool AsyncUDP::listenMulticast(const IPAddress addr, uint16_t port, uint8_t ttl)
         return true;
     }
 
+    // Start the libuv event loop on a dedicated background thread.
     _ioThread = std::thread([this](){
         uv_run(&_loop, UV_RUN_DEFAULT);
     });
@@ -192,16 +217,21 @@ bool AsyncUDP::listenMulticast(const IPAddress addr, uint16_t port, uint8_t ttl)
 }
 
 size_t AsyncUDP::writeTo(const uint8_t *data, size_t len, const IPAddress addr, uint16_t port) {
+    // Enqueue a heap copy of the payload and wake the I/O thread.
+    // uv_udp_send is not thread-safe, so the actual send happens in _attemptWrite()
+    // which runs on the uv loop thread.
     auto task = std::make_unique<asyncUDPSendTask>((uint8_t*)data, len, addr, port);
     _sendQueueMutex.lock();
     _sendQueue.push_back(std::move(task));
     _sendQueueMutex.unlock();
-    uv_async_send(&_async);
+    uv_async_send(&_async);  // Wake the I/O thread
     return len;
 }
 
 void AsyncUDP::_attemptWrite() {
     if (_waitingToBeLooped) {
+        // Still waiting for the loopback copy of the previous send; don't
+        // send the next packet yet to avoid interleaving loopback detection.
         return;
     }
     _sendQueueMutex.lock();
@@ -210,8 +240,10 @@ void AsyncUDP::_attemptWrite() {
         _sendQueue.pop_back();
         _sendQueueMutex.unlock();
         _doWrite(task->data, task->len, task->addr, task->port);
+        // Park the task so the read callback can match its loopback copy.
         _waitingToBeLooped = std::move(task);
         _emptiedBuffer = false;
+        // Start a watchdog timer in case the loopback copy is dropped.
         uv_timer_start(&_timer, _asyncudp_timer_cb, LOOP_TIMER_CHECK_TIMEOUT_MS, LOOP_TIMER_CHECK_TIMEOUT_MS);
     } else {
         _sendQueueMutex.unlock();
@@ -221,6 +253,7 @@ void AsyncUDP::_attemptWrite() {
 void AsyncUDP::_DO_NOT_CALL_async_cb() {
     _attemptWrite();
     if (_quit.load()) {
+        // Destructor was called; leave the multicast group and stop the loop.
         uv_udp_recv_stop(&_socket);
         // FIXME: don't do bytes → string → bytes IP conversion
         int maxIpLength = 3*4+3; // 3 digits per octet, 4 octets, 3 dots
@@ -238,16 +271,17 @@ void AsyncUDP::_DO_NOT_CALL_timer_cb() {
         return;
     }
     if (_emptiedBuffer) {
-        // We waited for LOOP_TIMER_CHECK_TIMEOUT_MS; we exhausted the receive buffer yet we did not receive the LOOPed packet we were waiting for.
-        // It is fair to say we will most likely never receive it.
-        // Probably it was dropped by the kernel because the receive buffer was full.
+        // We waited LOOP_TIMER_CHECK_TIMEOUT_MS ms and exhausted the receive
+        // buffer without seeing the looped copy — it was likely dropped by the
+        // kernel (receive buffer full).  Give up waiting and unblock the queue.
         _waitingToBeLooped = std::unique_ptr<asyncUDPSendTask>();
         uv_timer_stop(&_timer);
     } else {
-        // We are still waiting for the packet to be LOOPed back but we havn't yet exhausted the receive buffer.
+        // The receive buffer is not yet exhausted; keep waiting.
     }
 }
 
+/** libuv send completion callback: frees the heap-allocated request struct. */
 void _asyncudp_send_cb(uv_udp_send_t *req, int status) {
     free(req);
 }
@@ -263,6 +297,7 @@ void AsyncUDP::_doWrite(const uint8_t *data, size_t len, const IPAddress addr, u
     struct sockaddr uvAddr;
     uv_ip4_addr(addr_str, port, (struct sockaddr_in *)&uvAddr);
 
+    // The uv_udp_send_t request struct must outlive the call; free it in the callback.
     uv_udp_send_t *req = (uv_udp_send_t *)malloc(sizeof(uv_udp_send_t));
     uv_buf_t msg;
     msg.base = (char *)data;

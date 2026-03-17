@@ -100,6 +100,21 @@ class Print
 
     virtual void flush() { /* Empty implementation for backward compatibility */ }
 
+    /**
+     * Format and print a string using printf-style syntax.
+     *
+     * Extends the Arduino Print API so that all Print/Stream subclasses
+     * (Serial, File, etc.) inherit formatted output without each needing its
+     * own implementation.  Output is routed through write(), respecting any
+     * subclass-specific buffering or destination.
+     *
+     * The internal buffer is limited to 255 bytes; longer formatted strings
+     * are silently truncated.
+     *
+     * @param format printf-style format string.
+     * @param ...    Arguments for the format string.
+     * @return Number of bytes written (0 on formatting error).
+     */
     size_t printf(const char *format, ...) __attribute__((format(printf, 2, 3))) {
         va_list args;
         va_start(args, format);

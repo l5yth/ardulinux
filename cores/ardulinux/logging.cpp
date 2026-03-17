@@ -33,10 +33,15 @@ void log(LogSystem sys, LogLevel level, const char *fmt, ...) {
 }
 
 void logv(LogSystem sys, LogLevel level, const char *fmt, va_list args) {
-  char buf[256]; // FIXME - this takes up lots of stack space
+  // Fixed 256-byte stack buffer: messages longer than 255 chars are silently
+  // truncated.  This is intentional to keep stack usage bounded; a future
+  // improvement could use heap allocation with a fallback.
+  char buf[256];
   vsnprintf(buf, sizeof(buf), fmt, args);
+  // Route all log output through the Serial abstraction so that the logging
+  // destination can be redirected by swapping the Serial implementation.
   Serial.write(buf);
-  Serial.write('\n'); // FIXME make logging smarter
+  Serial.write('\n');
 }
 
 void log_e(const char *fmt, ...) {

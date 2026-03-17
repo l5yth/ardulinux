@@ -22,44 +22,71 @@
 #ifndef SPIChip_DEFINED
 #define SPIChip_DEFINED
 
-class SPIChip 
+/**
+ * Abstract interface for a SPI chip (real or simulated).
+ *
+ * LinuxHardwareSPI holds a shared_ptr<SPIChip> so it can transparently swap
+ * between the real spidev-backed LinuxSPIChip and the no-op SimSPIChip
+ * without changing application code.
+ */
+class SPIChip
 {
 public:
     /**
-     * Do a SPI transaction to the selected device
-     * 
-     * @param outBuf if NULL it will be not used (zeros will be sent)
-     * @param inBuf if NULL it will not be used (device response bytes will be discarded)
-     * @param deassertCS after last transaction (if not set, it will be left asserted)
-     * @return 0 for success, else ERRNO fault code
+     * Perform a full-duplex SPI transfer.
+     *
+     * Either buffer may be NULL:
+     *  - NULL @p outBuf sends zeros on MOSI.
+     *  - NULL @p inBuf discards MISO bytes.
+     *
+     * @param outBuf    Data to transmit (MOSI), or NULL to send zeros.
+     * @param inBuf     Buffer to receive data (MISO), or NULL to discard.
+     * @param bufLen    Number of bytes to transfer.
+     * @param deassertCS If true, deassert chip-select after the transfer.
+     * @return 0 on success, or a negative errno value on failure.
      */
     virtual int transfer(const uint8_t *outBuf, uint8_t *inBuf, size_t bufLen, bool deassertCS = true) = 0;
 
-    /// is this chip controlling real hardware?
+    /** @return true if this chip does not control real hardware. */
     virtual const bool isSimulated() { return false; }
+
+    /**
+     * Lock the SPI bus and set the clock speed for the upcoming transaction.
+     *
+     * @param clockSpeed Clock frequency in Hz.
+     */
     virtual void beginTransaction(uint32_t clockSpeed) {};
+
+    /** Release the SPI bus after a transaction. */
     virtual void endTransaction() {};
 };
 
 
+/**
+ * No-op SPI chip implementation used when no spidev device is available.
+ *
+ * All transfers succeed immediately and return zeros in @p inBuf.
+ * This allows application code to compile and run on hosts without SPI
+ * hardware; only the SPI interaction is skipped.
+ */
 class SimSPIChip : public SPIChip
 {
 public:
     /**
-     * Do a SPI transaction to the selected device
-     * 
-     * @param outBuf if NULL it will be not used (zeros will be sent)
-     * @param inBuf if NULL it will not be used (device response bytes will be discarded)
-     * @param deassertCS after last transaction (if not set, it will be left asserted)
-     * @return 0 for success, else ERRNO fault code
+     * Simulate a SPI transfer — does nothing, returns success.
+     *
+     * @param outBuf    Ignored.
+     * @param inBuf     Left unchanged (caller receives whatever it contained).
+     * @param bufLen    Ignored.
+     * @param deassertCS Ignored.
+     * @return Always 0 (success).
      */
     int transfer(const uint8_t *outBuf, uint8_t *inBuf, size_t bufLen, bool deassertCS = true) {
-        // log(SysSPI, LogVerbose, "SIM: spiTransfer(%d) -> %d", bufLen);
         return 0;
     }
 
-    /// is this chip controlling real hardware?
-    virtual const bool isSimulated() { return true; }    
+    /** @return Always true — this chip does not control real hardware. */
+    virtual const bool isSimulated() { return true; }
 };
 
 #endif

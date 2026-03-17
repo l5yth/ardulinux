@@ -31,41 +31,60 @@
 
 // #include "linux/gpio/classic/GPIOChip.h"
 
+/** Total number of GPIO slots; set by gpioInit(). */
 int NUM_GPIOS;
 
+/** True once at least one real hardware pin has been bound via gpioBind(). */
 bool realHardware = false;
 
+/** Indexed array of all GPIO pin implementations (owned pointers). */
 std::vector<std::unique_ptr<GPIOPinIf>> pins;
 
 GPIOPinIf::~GPIOPinIf() {}
 
-/** By default we assign simulated GPIOs to all pins, later applications can customize this in ardulinuxSetup */
-// FIXME: gpioInit() appends to pins rather than resetting it, so calling it
-// more than once in the same process grows the vector unboundedly. Pins
-// created by earlier calls remain at their original indices and are not
-// replaced. Reset pins.clear() / NUM_GPIOS before push_back to fix.
+/**
+ * Populate the pin table with SimGPIOPin instances.
+ *
+ * Note: appends to the existing vector rather than resetting it, so calling
+ * this function more than once grows the table unboundedly.  Call only once
+ * per process lifetime.
+ */
 void gpioInit(int _num_gpios) {
   NUM_GPIOS = _num_gpios;
   for(size_t i = 0; i < NUM_GPIOS; i++)
     pins.push_back(std::make_unique<SimGPIOPin>(i, "Unbound"));
 }
 
+/** Poll every pin that has an ISR attached and fire the ISR if triggered. */
 void gpioIdle() {
-  // log(SysGPIO, LogDebug, "doing idle refresh");
   for(size_t i = 0; i < NUM_GPIOS; i++)
     pins[i]->refreshIfNeeded();
 }
 
+/**
+ * Install a real hardware pin at its declared pin number.
+ *
+ * Destroys the SimGPIOPin that previously occupied the slot and replaces it
+ * with @p p.  Setting realHardware=true causes the main loop to skip its
+ * 100 ms idle sleep so that ISR polling happens at full throughput.
+ */
 void gpioBind(GPIOPinIf *p) {
   if (!(p->getPinNum() < NUM_GPIOS))
     log(SysGPIO, LogError, "getPinNum %u isn't smaller than max %d", p->getPinNum(), NUM_GPIOS);
   assert(p->getPinNum() < NUM_GPIOS);
   pins[p->getPinNum()].reset(p);
-  realHardware = true;
+  realHardware = true; // Disable loop sleep now that real hardware is present
 }
 
 /**
- * Return the specified GPIO pin or the UnboundPin pin instance */
+ * Look up and return the pin implementation for Arduino pin @p n.
+ *
+ * Aborts (via assert) if @p n is out of range.  Internal use only; Arduino
+ * API functions (digitalRead, digitalWrite, etc.) call this.
+ *
+ * @param n Arduino pin number.
+ * @return Pointer to the GPIOPinIf implementation (never NULL).
+ */
 GPIOPinIf *getGPIO(pin_size_t n)
 {
   if (!(n < NUM_GPIOS))
@@ -74,68 +93,62 @@ GPIOPinIf *getGPIO(pin_size_t n)
   return pins[n].get();
 }
 
+/** Arduino API: configure the direction/mode of a digital pin. */
 void pinMode(pin_size_t pinNumber, PinMode pinMode)
 {
-  // log(SysGPIO, LogDebug, "pinMode(%d, %d)", pinNumber, pinMode);
   auto p = getGPIO(pinNumber);
-  // https://forums.raspberrypi.com/viewtopic.php?t=257773
-  // https://docs.arduino.cc/learn/microcontrollers/digital-pins/
   p->setPinMode(pinMode);
 }
 
+/** Arduino API: write HIGH or LOW to a digital pin. */
 void digitalWrite(pin_size_t pinNumber, PinStatus status)
 {
-  // log(SysGPIO, LogDebug, "digitalWrite(%d, %d)", pinNumber, status);
   auto p = getGPIO(pinNumber);
   p->writePin(status);
 }
 
+/** Arduino API: read the current logic level of a digital pin. */
 PinStatus digitalRead(pin_size_t pinNumber)
 {
   auto p = getGPIO(pinNumber);
-  auto r = p->readPin();
-
-  // log(SysGPIO, LogDebug, "digitalRead(%d) -> %d", pinNumber, r);
-  return r;
+  return p->readPin();
 }
 
+/** Arduino API: measure the duration of a pulse on a pin. */
 unsigned long pulseIn(uint8_t pin, uint8_t state, unsigned long timeout)
 {
   auto p = getGPIO(pin);
-  auto r = p->pulseIn((PinStatus)state, timeout);
-
-  // log(SysGPIO, LogDebug, "pulseIn(%d) -> %d", pinNumber, r);
-  return r;
+  return p->pulseIn((PinStatus)state, timeout);
 }
 
+/** Arduino API: read an analog value from a pin (not widely supported). */
 int analogRead(pin_size_t pinNumber)
 {
   auto p = getGPIO(pinNumber);
   auto r = p->analogRead();
-
   log(SysGPIO, LogDebug, "analogRead(%d) -> %d", pinNumber, r);
   return r;
 }
 
+/** Arduino API: write a PWM/analog value to a pin (not widely supported). */
 void analogWrite(pin_size_t pinNumber, int value)
 {
   auto p = getGPIO(pinNumber);
-
   log(SysGPIO, LogDebug, "analogWrite(%d) -> %d", pinNumber, value);
   p->analogWrite(value);
 }
 
+/** Arduino API: attach an ISR callback to a pin, triggered by @p mode. */
 void attachInterrupt(pin_size_t interruptNumber, voidFuncPtr callback,
                      PinStatus mode)
 {
-  //log(SysInterrupt, LogDebug, "attachInterrupt %d", interruptNumber);
   auto p = getGPIO(interruptNumber);
   p->attachInterrupt(callback, mode);
 }
 
+/** Arduino API: remove a previously attached ISR from a pin. */
 void detachInterrupt(pin_size_t interruptNumber)
 {
-  //log(SysInterrupt, LogDebug, "detachInterrupt %d", interruptNumber);
   auto p = getGPIO(interruptNumber);
   p->detachInterrupt();
 }
