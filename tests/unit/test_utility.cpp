@@ -58,12 +58,12 @@ TEST_CASE("ardulinuxCheckZero throws Exception when result is non-zero", "[utili
 
 TEST_CASE("ardulinuxDebug raises SIGINT (caught by test handler)", "[utility]") {
     // Install a handler that records the signal so the process is not killed.
-    static volatile bool sigint_received;
-    sigint_received = false;
+    static volatile sig_atomic_t sigint_received;
+    sigint_received = 0;
 
-    auto prev = std::signal(SIGINT, [](int) { sigint_received = true; });
+    auto prev = std::signal(SIGINT, [](int) { sigint_received = 1; });
     ardulinuxDebug();
     std::signal(SIGINT, prev);
 
-    CHECK(sigint_received == true);
+    CHECK(sigint_received == 1);
 }

@@ -327,8 +327,9 @@ TEST_CASE("FS::mkdir and rmdir exercise valid-impl code paths", "[fs][valid]") {
     CHECK(myfs.mkdir(String("/subdir2")) == true);
 
     // rmdir() exercises the FS.cpp delegation path.  VFSImpl::rmdir
-    // internally calls unlink() which fails on directories (a known quirk),
-    // so we only verify the call does not crash rather than asserting success.
+    // internally calls unlink() instead of ::rmdir(), so it always fails on
+    // directories (TODO: bug in vfs_api.cpp:220 — should use ::rmdir).
+    // We only verify the call does not crash rather than asserting success.
     CHECK_NOTHROW(myfs.rmdir("/subdir"));
     CHECK_NOTHROW(myfs.rmdir(String("/subdir2")));
 
@@ -380,7 +381,7 @@ TEST_CASE("File::rewindDirectory resets directory iterator", "[fs][file]") {
     REQUIRE(dir.isDirectory());
 
     // Read at least one entry then rewind.
-    fs::File e1 = dir.openNextFile();
+    (void)dir.openNextFile();
     CHECK_NOTHROW(dir.rewindDirectory());
 
     dir.close();
