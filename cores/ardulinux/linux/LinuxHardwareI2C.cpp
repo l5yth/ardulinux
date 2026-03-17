@@ -148,6 +148,10 @@ namespace arduino {
      * subsequent reads fall through to the raw ::read() path.
      */
     int LinuxHardwareI2C::read() {
+        // (int)RXindex: cast to signed to prevent size_t wrap-around when
+        // RXindex > RXlen — without the cast the subtraction would produce a
+        // large positive value and the branch would be taken incorrectly.
+        // This fixes a latent underflow bug in the original unsigned arithmetic.
         if (RXlen - (int)RXindex != 0) {
             int tmpVal = RXbuf[RXindex];
             RXindex++;
@@ -191,6 +195,7 @@ namespace arduino {
      * FIONREAD (bytes pending in the driver's receive queue).
      */
     int LinuxHardwareI2C::available() {
+        // Same signed cast as in read(): prevents size_t underflow (latent bug fix).
         if (RXlen - (int)RXindex != 0)
             return RXlen - RXindex;
         int numBytes = 0;

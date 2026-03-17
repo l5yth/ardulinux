@@ -18,30 +18,14 @@
 // License along with this library; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
-#ifndef ARDULINUX_SIMHARDWAREI2C_H
-#define ARDULINUX_SIMHARDWAREI2C_H
+#ifndef ARDULINUX_LINUXHARDWAREI2C_H
+#define ARDULINUX_LINUXHARDWAREI2C_H
 
 #include "HardwareI2C.h"
 #include "Utility.h"
+#include "I2CTypes.h"
 
 namespace arduino {
-
-/**
- * Return codes for endTransmission(), matching the Arduino Wire API docs.
- *
- *  - I2cSuccess   (0): transmission succeeded.
- *  - I2cTooLong   (1): data too long to fit in the transmit buffer.
- *  - I2cAddrNAK   (2): NACK received on address byte.
- *  - I2cDataNAK   (3): NACK received on data byte.
- *  - I2cOtherError(4): other error.
- */
-enum ResultI2c {
-  I2cSuccess = 0,  ///< Transmission succeeded
-  I2cTooLong,      ///< TX buffer overflow
-  I2cAddrNAK,      ///< Address phase not acknowledged
-  I2cDataNAK,      ///< Data phase not acknowledged
-  I2cOtherError    ///< Unclassified I²C error
-};
 
 /**
  * Arduino Wire (I²C master) implementation using the Linux i2c-dev interface.
@@ -197,4 +181,4 @@ public:
 extern LinuxHardwareI2C Wire;
 } // namespace arduino
 
-#endif // ARDULINUX_SIMHARDWAREI2C_H
+#endif // ARDULINUX_LINUXHARDWAREI2C_H

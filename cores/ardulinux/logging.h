@@ -73,6 +73,10 @@ void log(LogSystem sys, LogLevel level, const char *fmt, ...)
  * @param level Severity level.
  * @param fmt   printf-style format string.
  * @param args  Caller-owned va_list (not modified by this function).
+ *
+ * @note Messages longer than 255 characters are silently truncated.  The
+ *       fixed stack buffer is intentional to keep stack usage bounded; heap
+ *       allocation is a possible future improvement.
  */
 void logv(LogSystem sys, LogLevel level, const char *fmt, va_list args);
 

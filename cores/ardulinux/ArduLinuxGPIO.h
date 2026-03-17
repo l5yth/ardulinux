@@ -254,11 +254,13 @@ public:
  * Initialise the global GPIO pin table.
  *
  * Allocates @p _num_gpios SimGPIOPin instances indexed 0 … _num_gpios-1.
- * Must be called once before any GPIO API function.  Calling it a second
- * time appends additional SimGPIOPin instances without resetting existing
- * ones — do not call more than once per process.
+ * Must be called once before any GPIO API function.
  *
  * @param _num_gpios Number of GPIO slots to allocate (default: 64).
+ *
+ * @note Known issue: calling gpioInit() a second time appends new SimGPIOPin
+ *       instances rather than resetting the existing table.  Call it only
+ *       once per process.
  */
 void gpioInit(int _num_gpios = 64);
 

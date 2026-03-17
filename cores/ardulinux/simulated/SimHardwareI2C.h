@@ -23,22 +23,9 @@
 
 #include "HardwareI2C.h"
 #include "Utility.h"
+#include "I2CTypes.h"
 
 namespace arduino {
-
-/**
- * Return codes for endTransmission(), matching the Arduino Wire API docs.
- *
- * Shared between SimHardwareI2C and LinuxHardwareI2C so application code
- * can check the result without caring which backend is in use.
- */
-enum ResultI2c {
-  I2cSuccess = 0,  ///< Transmission succeeded
-  I2cTooLong,      ///< TX buffer overflow
-  I2cAddrNAK,      ///< Address phase not acknowledged
-  I2cDataNAK,      ///< Data phase not acknowledged
-  I2cOtherError    ///< Unclassified I²C error
-};
 
 /**
  * No-op I²C master implementation used when ARDULINUX_HARDWARE is not defined.
