@@ -23,6 +23,7 @@ add_executable(ardulinux-tests
     test_logging.cpp
     test_fs.cpp
     test_xdg_dirs.cpp
+    test_app_info.cpp
     # Always use simulated I2C for tests (no real hardware needed)
     ${CMAKE_SOURCE_DIR}/cores/ardulinux/simulated/SimHardwareI2C.cpp
 )

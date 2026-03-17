@@ -24,6 +24,7 @@ add_library(ardulinux-base STATIC
         cores/ardulinux/dtostrf.c
         cores/ardulinux/logging.cpp
         cores/ardulinux/Utility.cpp
+        cores/ardulinux/AppInfo.cpp
         cores/ardulinux/XDGDirs.cpp
         cores/ardulinux/ArduLinuxGPIO.cpp
 

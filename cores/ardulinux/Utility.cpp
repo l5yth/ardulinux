@@ -19,6 +19,7 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 #include "Utility.h"
+#include "AppInfo.h"
 #include <csignal>
 #include <stdio.h>
 #include <stdarg.h>
@@ -33,7 +34,7 @@ void ardulinuxError(const char *msg, ...) {
   va_start(args, msg);
   vsnprintf(msgBuffer, sizeof msgBuffer, msg, args);
   va_end(args);
-  printf("ArduLinux critical error: %s\n", msgBuffer);
+  printf("%s critical error: %s\n", ardulinuxAppName, msgBuffer);
   throw Exception(msgBuffer);
 }
 
@@ -41,7 +42,7 @@ int ardulinuxCheckNotNeg(int result, const char *msg, ...) {
   if (result < 0) {
     // Include errno so callers can diagnose OS-level failures without
     // needing to capture it themselves before calling this function.
-    printf("ArduLinux notneg errno=%d: %s\n", errno, msg);
+    printf("%s notneg errno=%d: %s\n", ardulinuxAppName, errno, msg);
     throw Exception(msg);
   }
   return result;
@@ -50,7 +51,7 @@ int ardulinuxCheckNotNeg(int result, const char *msg, ...) {
 
 int ardulinuxCheckZero(int result, const char *msg, ...) {
   if (result != 0) {
-    printf("ArduLinux checkzero %d: %s\n", result, msg);
+    printf("%s checkzero %d: %s\n", ardulinuxAppName, result, msg);
     throw Exception(msg);
   }
   return result;
