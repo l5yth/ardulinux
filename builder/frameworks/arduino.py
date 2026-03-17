@@ -84,6 +84,7 @@ ardulinux_filter = [
     "+<dtostrf.c>",
     "+<logging.cpp>",
     "+<Utility.cpp>",
+    "+<AppInfo.cpp>",
     "+<XDGDirs.cpp>",
     "+<ArduLinuxGPIO.cpp>",
     "+<main.cpp>",

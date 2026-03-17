@@ -21,13 +21,16 @@
 #ifdef ARDULINUX_HARDWARE
 
 #include "linux/gpio/LinuxGPIOPin.h"
+#include "AppInfo.h"
 #include <assert.h>
 #include <sys/stat.h>
 #include <sys/sysmacros.h>
 #include <dirent.h>
 #include <unistd.h>
 
-const char *consumer = "ardulinux";
+// Consumer label passed to libgpiod — uses the application name so the
+// correct process is visible in /sys/kernel/debug/gpio and similar tools.
+#define consumer ardulinuxAppName
 
 static bool chip_is_gpiochip_device(const char *path) {
   char *realname, *sysfsp, devpath[64];

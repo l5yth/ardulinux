@@ -19,6 +19,7 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 #include "Arduino.h"
+#include "AppInfo.h"
 #include "ArduLinuxFS.h"
 #include "ArduLinuxGPIO.h"
 #include "XDGDirs.h"
@@ -68,7 +69,7 @@ void __attribute__((weak)) ardulinuxCustomInit() {}
 // argp descriptor strings — shown in --help output.
 const char *argp_program_bug_address =
     "https://github.com/l5yth/ardulinux";
-static char doc[] = "An application written with ardulinux";
+// doc is set at runtime from ardulinuxAppDescription in ardulinux_main().
 static char args_doc[] = "...";
 
 /** Built-in command-line options recognised by the runtime. */
@@ -168,7 +169,7 @@ int rmrf(char *path)
     return nftw(path, unlink_cb, 64, FTW_DEPTH | FTW_PHYS);
 }
 
-static struct argp argp = {options, parse_opt, args_doc, doc, children, 0, 0};
+static struct argp argp = {options, parse_opt, args_doc, nullptr, children, 0, 0};
 
 /**
  * Register an application-specific argp child parser.
@@ -235,6 +236,9 @@ int ardulinux_main(int argc, char *argv[]) {
 
   ardulinuxCustomInit();
 
+  // Apply app-provided metadata before argp parses (which reads argp.doc).
+  argp.doc = ardulinuxAppDescription;
+
   auto *args = &ardulinuxArguments;
 
   auto parseResult = argp_parse(&argp, argc, argv, 0, 0, args);
@@ -243,13 +247,13 @@ int ardulinux_main(int argc, char *argv[]) {
 
     if (!args->fsDir) {
       // Construct default VFS root: $XDG_DATA_HOME/ardulinux/default/
-      fsRoot = xdgDataDir("ardulinux").c_str();
+      fsRoot = xdgDataDir(ardulinuxAppName).c_str();
       mkdir(fsRoot.c_str(), 0700);  // Create $XDG_DATA_HOME/ardulinux if needed (ignore EEXIST)
       fsRoot += "/default";
     } else
       fsRoot += args->fsDir;
 
-    printf("ArduLinux is starting, VFS root at %s\n", fsRoot.c_str());
+    printf("%s is starting, VFS root at %s\n", ardulinuxAppName, fsRoot.c_str());
 
     int status = mkdir(fsRoot.c_str(), 0700);
     if (status != 0 && errno == EEXIST && args->erase) {
