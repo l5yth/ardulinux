@@ -10,8 +10,14 @@ FetchContent_MakeAvailable(Catch2)
 add_executable(ardulinux-tests
     test_gpio.cpp
     test_spi.cpp
+    test_spi_stubs.cpp
+    test_linux_spi.cpp
     test_serial.cpp
+    test_sim_serial.cpp
     test_sim_i2c.cpp
+    test_millis.cpp
+    test_linux_common.cpp
+    test_vfs.cpp
     # Always use simulated I2C for tests (no real hardware needed)
     ${CMAKE_SOURCE_DIR}/cores/ardulinux/simulated/SimHardwareI2C.cpp
 )

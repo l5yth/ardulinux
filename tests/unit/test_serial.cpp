@@ -147,3 +147,32 @@ TEST_CASE("LinuxSerial::read returns -1 when no data available on PTY", "[serial
     serial.end();
     close(master);
 }
+
+TEST_CASE("LinuxSerial::peek always returns -1", "[serial]") {
+    arduino::LinuxSerial serial;
+    CHECK(serial.peek() == -1);
+}
+
+TEST_CASE("LinuxSerial::flush is a no-op and does not crash", "[serial]") {
+    arduino::LinuxSerial serial;
+    CHECK_NOTHROW(serial.flush());
+}
+
+TEST_CASE("LinuxSerial::available returns non-negative value on open port", "[serial][pty]") {
+    char slave_path[256];
+    int master = open_pty_master(slave_path, sizeof(slave_path));
+    REQUIRE(master >= 0);
+
+    arduino::LinuxSerial serial;
+    serial.setPath(slave_path);
+    serial.begin(115200);
+    REQUIRE(bool(serial));
+
+    // ioctl(FIONREAD) on an open PTY slave succeeds and returns a non-negative
+    // byte count.  This exercises the success path (return bytes) in available().
+    // The value may be 0 if no data has arrived yet, which is still valid.
+    CHECK(serial.available() >= 0);
+
+    serial.end();
+    close(master);
+}
