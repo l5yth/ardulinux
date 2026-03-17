@@ -70,7 +70,23 @@ void __attribute__((weak)) ardulinuxCustomInit() {}
 const char *argp_program_bug_address =
     "https://github.com/l5yth/ardulinux";
 // doc is set at runtime from ardulinuxAppDescription in ardulinux_main().
-static char args_doc[] = "...";
+// args_doc is empty: the runtime accepts no positional arguments.
+static const char args_doc[] = "";
+
+/**
+ * argp version-print hook called when @c --version / @c -V is passed.
+ *
+ * Prints "<appname> <version>\n" to @p stream.  When @c ardulinuxAppName is
+ * @c nullptr (not the typical case), falls back to the basename in @c argv[0]
+ * via @p state->name so the output is always meaningful.
+ *
+ * @param stream Output stream (stdout for @c --version).
+ * @param state  argp parser state; @c state->name is the argv[0] basename.
+ */
+static void print_version(FILE *stream, struct argp_state *state) {
+    const char *name = ardulinuxAppName ? ardulinuxAppName : state->name;
+    fprintf(stream, "%s %s\n", name, ardulinuxAppVersion);
+}
 
 /** Built-in command-line options recognised by the runtime. */
 static struct argp_option options[] = {
@@ -236,8 +252,9 @@ int ardulinux_main(int argc, char *argv[]) {
 
   ardulinuxCustomInit();
 
-  // Apply app-provided metadata before argp parses (which reads argp.doc).
+  // Apply app-provided metadata before argp parses.
   argp.doc = ardulinuxAppDescription;
+  argp_program_version_hook = print_version;
 
   auto *args = &ardulinuxArguments;
 

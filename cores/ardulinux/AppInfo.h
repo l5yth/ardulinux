@@ -31,3 +31,22 @@ extern const char *ardulinuxAppName;
  * @endcode
  */
 extern const char *ardulinuxAppDescription;
+
+/**
+ * Version string printed by @c --version, in the format expected by argp:
+ * @c "<appname> <version>".
+ *
+ * The platform default is taken from the @c FIRMWARE_VERSION preprocessor
+ * define if it is set at compile time (pass @c -DFIRMWARE_VERSION="1.2.3" to
+ * CMake/the compiler), otherwise it falls back to @c "unknown".
+ *
+ * Override the weak default in your application source:
+ *
+ * @code
+ * const char *ardulinuxAppVersion = "1.14.1-linux";
+ * @endcode
+ *
+ * @note @c nullptr is not a valid value; argp will segfault if the version
+ *       hook dereferences a null pointer.
+ */
+extern const char *ardulinuxAppVersion;

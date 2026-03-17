@@ -10,3 +10,11 @@
 
 __attribute__((weak)) const char *ardulinuxAppName = "ardulinux";
 __attribute__((weak)) const char *ardulinuxAppDescription = "An application written with ardulinux";
+
+// Use the build-time FIRMWARE_VERSION define when provided (e.g. via
+// -DFIRMWARE_VERSION="1.14.1-linux"), otherwise fall back to "unknown".
+#ifdef FIRMWARE_VERSION
+__attribute__((weak)) const char *ardulinuxAppVersion = FIRMWARE_VERSION;
+#else
+__attribute__((weak)) const char *ardulinuxAppVersion = "unknown";
+#endif
