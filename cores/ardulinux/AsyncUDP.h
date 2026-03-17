@@ -71,7 +71,11 @@ protected:
     /**
      * Construct a packet wrapping an existing buffer.
      *
-     * @param byte Pointer to received data (not copied; caller retains ownership).
+     * The buffer is owned by the libuv read callback and is freed immediately
+     * after the packet handler returns.  Do not retain @p byte beyond the
+     * lifetime of the handler invocation.
+     *
+     * @param byte Pointer to received data (valid only for the handler's duration).
      * @param len  Length in bytes.
      */
     AsyncUDPPacket(uint8_t* byte, size_t len) {
@@ -160,9 +164,12 @@ private:
     /**
      * Pending send tasks.
      *
-     * writeTo() enqueues tasks here; _attemptWrite() dequeues them one
-     * at a time from the uv loop thread.  uv_udp_send is not thread-safe
-     * so sends are serialised through this queue plus uv_async_send().
+     * writeTo() enqueues tasks here; _attemptWrite() dequeues them one at a
+     * time from the uv loop thread.  uv_udp_send is not thread-safe so sends
+     * are serialised through this queue plus uv_async_send().
+     *
+     * @note _attemptWrite() uses pop_back(), so the queue is processed in
+     *       LIFO order.  Under sustained write load, older tasks may be delayed.
      */
     std::vector<std::unique_ptr<asyncUDPSendTask>> _sendQueue;
 

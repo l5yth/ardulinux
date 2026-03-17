@@ -97,6 +97,9 @@ void AsyncUDP::_DO_NOT_CALL_uv_on_read(uv_udp_t *handle, ssize_t nread, const uv
             // Or this happens because the receive buffer was full and the packet we are waiting for was dropped.
             _emptiedBuffer = true;
         }
+        // libuv allocates a buffer for every read attempt via _asyncudp_alloc_buffer_cb.
+        // When nread <= 0 (no data or error) the buffer is still allocated and must be freed.
+        free(buf->base);
         return;
     }
     _handlerMutex.lock();
