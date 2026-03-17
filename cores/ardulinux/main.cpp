@@ -21,6 +21,7 @@
 #include "Arduino.h"
 #include "ArduLinuxFS.h"
 #include "ArduLinuxGPIO.h"
+#include "XDGDirs.h"
 #include <argp.h>
 #include <stdio.h>
 #include <ftw.h>
@@ -205,7 +206,7 @@ void reboot() {
  *  1. Build a --erase-stripped copy of argv for use by reboot().
  *  2. Call ardulinuxCustomInit() so the application can register CLI flags.
  *  3. Parse command-line arguments.
- *  4. Mount the virtual filesystem (default: ~/.ardulinux/default/).
+ *  4. Mount the virtual filesystem (default: $XDG_DATA_HOME/ardulinux/default/).
  *  5. Call gpioInit() to populate the pin table with SimGPIOPin instances.
  *  6. Call ardulinuxSetup() so the application can bind real hardware pins.
  *  7. Call Arduino setup().
@@ -241,15 +242,10 @@ int ardulinux_main(int argc, char *argv[]) {
     String fsRoot;
 
     if (!args->fsDir) {
-      // Construct default VFS root: $HOME/.ardulinux/default/
-      const char *homeDir = getenv("HOME");
-      assert(homeDir);
-
-      fsRoot += homeDir + String("/.ardulinux");
-      mkdir(fsRoot.c_str(), 0700);  // Create ~/.ardulinux if needed (ignore EEXIST)
-
-      const char *instanceName = "default";
-      fsRoot += "/" + String(instanceName);
+      // Construct default VFS root: $XDG_DATA_HOME/ardulinux/default/
+      fsRoot = xdgDataDir("ardulinux").c_str();
+      mkdir(fsRoot.c_str(), 0700);  // Create $XDG_DATA_HOME/ardulinux if needed (ignore EEXIST)
+      fsRoot += "/default";
     } else
       fsRoot += args->fsDir;
 
