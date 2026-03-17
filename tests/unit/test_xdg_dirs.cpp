@@ -101,3 +101,18 @@ TEST_CASE("xdgDataDir result contains no trailing slash", "[xdg]") {
 
     CHECK(result.back() != '/');
 }
+
+TEST_CASE("xdgDataDir with trailing slash in XDG_DATA_HOME produces double slash", "[xdg]") {
+    // POSIX treats "/foo//bar" the same as "/foo/bar", so a double slash in
+    // the returned path is not a correctness bug.  This test documents the
+    // known behaviour so that a future normalisation step is easy to verify.
+    EnvGuard guard("XDG_DATA_HOME");
+    setenv("XDG_DATA_HOME", "/base/", 1);
+
+    std::string result = xdgDataDir("myapp");
+
+    // Result is "/base//myapp" — still ends with the app name.
+    CHECK(result.rfind("/myapp") == result.size() - 6);
+    // Double slash present because xdgDataDir does not normalise the base.
+    CHECK(result.find("//") != std::string::npos);
+}

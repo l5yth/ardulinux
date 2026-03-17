@@ -22,5 +22,12 @@
  * @pre appName != nullptr
  * @pre $HOME is set in the environment when $XDG_DATA_HOME is unset or empty
  *      (asserted at runtime).
+ * @pre The XDG base directory ($XDG_DATA_HOME or $HOME/.local/share) already
+ *      exists on the filesystem.  This function only returns a path string; it
+ *      does not create any directories.  Callers that need the returned path to
+ *      be writable must ensure the parent exists (e.g. via mkdir) before use.
+ * @note If $XDG_DATA_HOME contains a trailing slash the returned path will
+ *       contain a double slash (e.g. "/custom//appName").  This is valid per
+ *       POSIX but callers that require a canonical path should normalise it.
  */
 std::string xdgDataDir(const char *appName);
