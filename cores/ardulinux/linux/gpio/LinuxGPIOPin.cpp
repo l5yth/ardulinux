@@ -382,5 +382,6 @@ void LinuxGPIOPin::setPinMode(PinMode m) {
 #endif
 }
 
+#undef consumer
 
 #endif
