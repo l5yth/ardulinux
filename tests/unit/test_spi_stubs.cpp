@@ -5,21 +5,34 @@
 
 // Tests for the HardwareSPI base-class stubs in HardwareSPIStubs.cpp.
 //
-// ArduinoCore-API declares the HardwareSPI virtuals without definitions,
-// expecting each platform to supply them.  HardwareSPIStubs.cpp provides
-// do-nothing bodies so that the vtable can be built.
+// ArduinoCore-API 1.2.0+ declares the HardwareSPI virtuals as pure virtual
+// (= 0) but still allows out-of-line definitions for them.  HardwareSPIStubs.cpp
+// provides do-nothing bodies so that the vtable can be built.
 //
 // LinuxHardwareSPI overrides all stubs at runtime, so they are never called
 // through that path.  The only way to exercise the stub bodies is to call
-// them through a subclass that does NOT override them — which is what
-// BareSPI does below.
+// them explicitly as HardwareSPI::method() through a concrete subclass —
+// which is what BareSPI does below.
 
 #include <catch2/catch_test_macros.hpp>
 #include "HardwareSPI.h"
 
-// BareSPI: minimal concrete subclass with no overrides.
-// Every virtual method dispatches straight to the stub in HardwareSPIStubs.cpp.
-class BareSPI : public arduino::HardwareSPI {};
+// BareSPI: minimal concrete subclass that satisfies the pure-virtual
+// requirement by forwarding every call to the base-class stub body.
+class BareSPI : public arduino::HardwareSPI {
+public:
+    uint8_t  transfer(uint8_t d) override           { return HardwareSPI::transfer(d); }
+    uint16_t transfer16(uint16_t d) override         { return HardwareSPI::transfer16(d); }
+    void     transfer(void *b, size_t n) override    { HardwareSPI::transfer(b, n); }
+    void     usingInterrupt(int n) override          { HardwareSPI::usingInterrupt(n); }
+    void     notUsingInterrupt(int n) override       { HardwareSPI::notUsingInterrupt(n); }
+    void     beginTransaction(arduino::SPISettings s) override { HardwareSPI::beginTransaction(s); }
+    void     endTransaction() override               { HardwareSPI::endTransaction(); }
+    void     attachInterrupt() override              { HardwareSPI::attachInterrupt(); }
+    void     detachInterrupt() override              { HardwareSPI::detachInterrupt(); }
+    void     begin() override                        { HardwareSPI::begin(); }
+    void     end() override                          { HardwareSPI::end(); }
+};
 
 TEST_CASE("HardwareSPI::transfer(uint8_t) stub returns 0", "[spi][stubs]") {
     BareSPI spi;

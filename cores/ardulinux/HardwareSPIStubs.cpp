@@ -20,11 +20,11 @@
 
 // Stub definitions for arduino::HardwareSPI virtual methods.
 //
-// ArduinoCore-API declares these as non-pure virtual (with no out-of-line
-// definition), expecting each platform to supply implementations.  The linker
-// needs a definition for every virtual method to build the vtable, even if
-// LinuxHardwareSPI overrides them all.  These stubs satisfy that requirement
-// and are never called at runtime.
+// ArduinoCore-API 1.2.0+ declares these as pure virtual (= 0).  C++ permits
+// out-of-line definitions for pure virtuals; they act as do-nothing fallbacks
+// reachable only via explicit Base::method() calls, which LinuxHardwareSPI
+// never does.  The stubs satisfy the linker's vtable requirements and are
+// never called at runtime.
 
 #include "HardwareSPI.h"
 

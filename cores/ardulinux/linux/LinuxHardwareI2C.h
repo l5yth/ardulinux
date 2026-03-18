@@ -96,12 +96,12 @@ public:
    * @param len     Number of bytes to read.
    * @param stopBit Passed to the underlying I²C transaction (currently unused
    *                in the combined path).
-   * @return Number of bytes received, or a negative error code.
+   * @return Number of bytes received, or 0 on error.
    */
-  virtual uint8_t requestFrom(uint8_t address, size_t len, bool stopBit);
+  virtual size_t requestFrom(uint8_t address, size_t len, bool stopBit);
 
   /** Request @p len bytes from @p address with implicit STOP. */
-  virtual uint8_t requestFrom(uint8_t address, size_t len) {
+  virtual size_t requestFrom(uint8_t address, size_t len) {
     return requestFrom(address, len, true);
   }
 

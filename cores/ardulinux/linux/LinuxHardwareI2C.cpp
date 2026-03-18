@@ -218,7 +218,7 @@ namespace arduino {
      *
      * See: https://stackoverflow.com/questions/505023/reading-writing-from-using-i2c-on-linux
      */
-    uint8_t LinuxHardwareI2C::requestFrom(uint8_t address, size_t count, bool stop) {
+    size_t LinuxHardwareI2C::requestFrom(uint8_t address, size_t count, bool stop) {
         if (requestedBytes) {
             // Combined write-then-read: send TXbuf (e.g. register address)
             // then read @count bytes — all in one atomic I2C transaction.
@@ -246,9 +246,8 @@ namespace arduino {
             if (result >= 0) {
                 RXlen = count;  // Mark buffer as holding @count valid bytes
                 return count;
-            } else {
-                return result;  // Propagate negative errno
             }
+            return 0;  // ioctl failed; return 0 (caller checks RXlen == 0)
         } else {
             // Simple read: set slave address and read directly.
             ioctl(i2c_file, I2C_SLAVE, address);

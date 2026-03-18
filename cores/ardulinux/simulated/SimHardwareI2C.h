@@ -64,12 +64,12 @@ public:
   virtual uint8_t endTransmission(void) { return endTransmission(true); }
 
   /** Return 0 (no bytes received in simulation). */
-  virtual uint8_t requestFrom(uint8_t address, size_t len, bool stopBit) {
+  virtual size_t requestFrom(uint8_t address, size_t len, bool stopBit) {
     return 0;
   }
 
   /** Return 0 (no bytes received in simulation). */
-  virtual uint8_t requestFrom(uint8_t address, size_t len) {
+  virtual size_t requestFrom(uint8_t address, size_t len) {
     return 0;
   }
 
