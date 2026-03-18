@@ -73,28 +73,40 @@ void __attribute__((weak)) ardulinuxCustomInit() {}
 // args_doc is empty: the runtime accepts no positional arguments.
 static const char args_doc[] = "";
 
+/** Key for the long-only @c --usage option (outside printable ASCII range). */
+#define OPT_USAGE 0x100
+
 /**
- * argp version-print hook called when @c --version / @c -V is passed.
+ * Print the two-line application header to @p stream.
  *
- * Prints "<appname> <version>\n" to @p stream.  When @c ardulinuxAppName is
- * @c nullptr (not the typical case), falls back to the basename in @c argv[0]
- * via @p state->name so the output is always meaningful.
+ * Output: @c "<name> <version>\n<description>\n"
  *
- * @param stream Output stream (stdout for @c --version).
- * @param state  argp parser state; @c state->name is the argv[0] basename.
+ * Used as the preamble before @c --help, @c --usage, and @c --version output.
+ * When @c ardulinuxAppName is @c nullptr, falls back to the argv[0] basename
+ * via @p state->name; when @p state is also @c nullptr, falls back to
+ * @c "ardulinux".
+ *
+ * @param stream Destination stream.
+ * @param state  argp parser state; may be @c nullptr.
  */
-static void print_version(FILE *stream, struct argp_state *state) {
-    // argp may call this hook with state == NULL in some internal paths,
-    // so guard before dereferencing state->name.
+static void print_preamble(FILE *stream, struct argp_state *state) {
     const char *name = ardulinuxAppName ? ardulinuxAppName
                      : (state ? state->name : "ardulinux");
     fprintf(stream, "%s %s\n", name, ardulinuxAppVersion);
+    if (ardulinuxAppDescription && ardulinuxAppDescription[0])
+        fprintf(stream, "%s\n", ardulinuxAppDescription);
 }
 
 /** Built-in command-line options recognised by the runtime. */
 static struct argp_option options[] = {
-    {"erase", 'e', 0, 0, "Erase virtual filesystem before use"},
-    {"fsdir", 'd', "DIR", 0, "The directory to use as the virtual filesystem"},
+    {"erase",   'e',       0,     0, "Erase virtual filesystem before use"},
+    {"fsdir",   'd',       "DIR", 0, "The directory to use as the virtual filesystem"},
+    // Standard help/version options — defined here so we can prepend the
+    // app preamble before their output.  ARGP_NO_HELP prevents argp from
+    // adding duplicates automatically.
+    {"help",    '?',       0,     0, "Give this help list"},
+    {"usage",   OPT_USAGE, 0,     0, "Give a short usage message"},
+    {"version", 'V',       0,     0, "Print program version"},
     {0}};
 
 /**
@@ -141,6 +153,20 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
   case 'd':
     args->fsDir = arg;
     break;
+  case '?':  // --help
+    print_preamble(stdout, state);
+    fprintf(stdout, "\n");
+    argp_state_help(state, stdout,
+        ARGP_HELP_SHORT_USAGE | ARGP_HELP_LONG | ARGP_HELP_BUG_ADDR | ARGP_HELP_EXIT_OK);
+    break;
+  case OPT_USAGE:  // --usage
+    print_preamble(stdout, state);
+    fprintf(stdout, "\n");
+    argp_state_help(state, stdout, ARGP_HELP_USAGE | ARGP_HELP_EXIT_OK);
+    break;
+  case 'V':  // --version
+    print_preamble(stdout, state);
+    exit(0);
   case ARGP_KEY_ARG:
     return 0;  // Accept (and ignore) positional arguments
   default:
@@ -256,13 +282,16 @@ int ardulinux_main(int argc, char *argv[]) {
   ardulinuxCustomInit();
 
   // Apply app-provided metadata before argp parses.
-  argp.doc = ardulinuxAppDescription;
-  argp_program_version_hook = print_version;
+  // doc is nullptr: the description is printed in our --help/--usage/--version
+  // handlers via print_preamble(), not by argp itself.
+  argp.doc = nullptr;
   argp_program_bug_address = ardulinuxAppBugAddress;
 
   auto *args = &ardulinuxArguments;
 
-  auto parseResult = argp_parse(&argp, argc, argv, 0, 0, args);
+  // ARGP_NO_HELP: we define --help/--usage/--version ourselves (above) so
+  // argp must not add its own copies, which would produce duplicate options.
+  auto parseResult = argp_parse(&argp, argc, argv, ARGP_NO_HELP, 0, args);
   if (parseResult == 0) {
     String fsRoot;
 
