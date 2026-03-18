@@ -67,8 +67,8 @@ void __attribute__((weak)) ardulinuxSetup() {
 void __attribute__((weak)) ardulinuxCustomInit() {}
 
 // argp descriptor strings — shown in --help output.
-const char *argp_program_bug_address =
-    "https://github.com/l5yth/ardulinux";
+// argp_program_bug_address is set at runtime from ardulinuxAppBugAddress in
+// ardulinux_main() so applications can override it via the weak symbol.
 // doc is set at runtime from ardulinuxAppDescription in ardulinux_main().
 // args_doc is empty: the runtime accepts no positional arguments.
 static const char args_doc[] = "";
@@ -258,6 +258,7 @@ int ardulinux_main(int argc, char *argv[]) {
   // Apply app-provided metadata before argp parses.
   argp.doc = ardulinuxAppDescription;
   argp_program_version_hook = print_version;
+  argp_program_bug_address = ardulinuxAppBugAddress;
 
   auto *args = &ardulinuxArguments;
 

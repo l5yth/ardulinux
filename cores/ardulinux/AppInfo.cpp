@@ -10,6 +10,7 @@
 
 __attribute__((weak)) const char *ardulinuxAppName = "ardulinux";
 __attribute__((weak)) const char *ardulinuxAppDescription = "An application written with ardulinux";
+__attribute__((weak)) const char *ardulinuxAppBugAddress = "https://github.com/l5yth/ardulinux";
 
 // Use the build-time FIRMWARE_VERSION define when provided, otherwise fall
 // back to "unknown".  FIRMWARE_VERSION must be a string literal — pass it

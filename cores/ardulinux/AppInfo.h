@@ -33,6 +33,20 @@ extern const char *ardulinuxAppName;
 extern const char *ardulinuxAppDescription;
 
 /**
+ * URL shown in the "Report bugs to" line at the bottom of @c --help output.
+ *
+ * The platform provides a weak default pointing to the ardulinux repository.
+ * Override it in your application source to point to your own issue tracker:
+ *
+ * @code
+ * const char *ardulinuxAppBugAddress = "https://github.com/myorg/myapp/issues";
+ * @endcode
+ *
+ * @note May be @c nullptr to suppress the "Report bugs to" line entirely.
+ */
+extern const char *ardulinuxAppBugAddress;
+
+/**
  * Version string printed by @c --version, in the format expected by argp:
  * @c "<appname> <version>".
  *

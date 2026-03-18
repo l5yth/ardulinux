@@ -40,6 +40,17 @@ TEST_CASE("ardulinuxAppDescription default is non-empty", "[appinfo]") {
     CHECK(ardulinuxAppDescription[0] != '\0');
 }
 
+// ─── ardulinuxAppBugAddress ───────────────────────────────────────────────────
+
+TEST_CASE("ardulinuxAppBugAddress default is non-null", "[appinfo]") {
+    CHECK(ardulinuxAppBugAddress != nullptr);
+}
+
+TEST_CASE("ardulinuxAppBugAddress default points to ardulinux repo", "[appinfo]") {
+    REQUIRE(ardulinuxAppBugAddress != nullptr);
+    CHECK(std::string(ardulinuxAppBugAddress) == "https://github.com/l5yth/ardulinux");
+}
+
 // ─── ardulinuxAppVersion ──────────────────────────────────────────────────────
 
 TEST_CASE("ardulinuxAppVersion default is non-null", "[appinfo]") {
