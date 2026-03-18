@@ -39,3 +39,25 @@ TEST_CASE("ardulinuxAppDescription default is non-empty", "[appinfo]") {
     REQUIRE(ardulinuxAppDescription != nullptr);
     CHECK(ardulinuxAppDescription[0] != '\0');
 }
+
+// ─── ardulinuxAppVersion ──────────────────────────────────────────────────────
+
+TEST_CASE("ardulinuxAppVersion default is non-null", "[appinfo]") {
+    CHECK(ardulinuxAppVersion != nullptr);
+}
+
+TEST_CASE("ardulinuxAppVersion default is non-empty", "[appinfo]") {
+    REQUIRE(ardulinuxAppVersion != nullptr);
+    CHECK(ardulinuxAppVersion[0] != '\0');
+}
+
+TEST_CASE("ardulinuxAppVersion default is 'unknown' when FIRMWARE_VERSION is not defined", "[appinfo]") {
+    // The test binary is built without -DFIRMWARE_VERSION, so the weak
+    // default in AppInfo.cpp falls through to "unknown".
+#ifndef FIRMWARE_VERSION
+    REQUIRE(ardulinuxAppVersion != nullptr);
+    CHECK(std::string(ardulinuxAppVersion) == "unknown");
+#else
+    SUCCEED("FIRMWARE_VERSION is defined at compile time; skipping default check");
+#endif
+}
