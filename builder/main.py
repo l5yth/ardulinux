@@ -1,6 +1,16 @@
+from os.path import join
 from SCons.Script import AlwaysBuild, Default, DefaultEnvironment
 
 env = DefaultEnvironment()
+
+# Allow the application to override the output binary name.
+# Set board_build.progname in platformio.ini to change the default "program".
+progname = env.BoardConfig().get("build.progname", "")
+if progname:
+    env.Replace(
+        PROGNAME=progname,
+        PROGPATH=join(env.subst("$BUILD_DIR"), progname),
+    )
 
 target_bin = env.BuildProgram()
 
