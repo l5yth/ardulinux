@@ -33,8 +33,7 @@ namespace arduino {
 
 TEST_CASE("LinuxHardwareI2C::requestFrom returns error when fd is invalid", "[i2c][linux]") {
     // Pre-populate a TX byte so requestFrom takes the combined write-read path
-    // (ioctl I2C_RDWR).  That path fails immediately on fd 0 (stdin) without
-    // blocking, unlike the simple-read path which calls ::read() and would block.
+    // (ioctl I2C_RDWR), which fails immediately on the unopened fd (-1 -> EBADF).
     arduino::requestedBytes = 1;
     arduino::TXbuf[0] = 0x10;
 
@@ -42,7 +41,7 @@ TEST_CASE("LinuxHardwareI2C::requestFrom returns error when fd is invalid", "[i2
     // and the requestFrom function entry in LinuxHardwareI2C.cpp.
     size_t result = arduino::Wire.requestFrom((uint8_t)0x42, (size_t)4);
 
-    // ioctl(I2C_RDWR) on stdin fails; 0 is returned (not the requested count).
+    // ioctl(I2C_RDWR) on the unopened fd fails; 0 is returned (not the requested count).
     CHECK(result == (size_t)0);
 
     arduino::requestedBytes = 0;  // reset for subsequent tests
@@ -76,8 +75,8 @@ TEST_CASE("LinuxHardwareI2C::available returns remaining byte count from RX buff
     arduino::Wire.read();
     CHECK(arduino::Wire.available() == 1);
     arduino::Wire.read();
-    // Buffer exhausted; available() falls through to ioctl(FIONREAD) which
-    // returns 0 for fd 0 (stdin, no data pending).
+    // Buffer exhausted; available() falls through to ioctl(FIONREAD) on the
+    // unopened fd (-1), which fails and leaves the count at 0.
     CHECK(arduino::Wire.available() == 0);
 }
 
