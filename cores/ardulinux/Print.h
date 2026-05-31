@@ -1,12 +1,22 @@
 // ArduLinux - Arduino API for Linux
-// Platform-specific Print.h — extends ArduinoCore-API's Print class with
-// printf() so that all Print/Stream subclasses inherit it.
+// Platform-specific Print.h — extends ArduinoCore-API's Print class with a
+// printf() method so that all Print/Stream subclasses (Serial, File, ...)
+// inherit it.
 //
-// This file shadows ArduinoCore-API/api/Print.h in the include path.
-// Keep it in sync with the upstream when bumping ArduinoCore-API.
-// Upstream base: ArduinoCore-API 1.1.0 (0bb01af)
+// It takes effect in the PlatformIO build, where builder/frameworks/arduino.py
+// overlays the API headers WITHOUT Print.h, so `#include "Print.h"` falls
+// through the include path to this file.  The standalone CMake build searches
+// cores/arduino/api BEFORE cores/ardulinux, so its translation units compile
+// against the upstream Print.h instead — that build does not use printf, so the
+// difference is benign (tests/unit/test_printf.cpp pins this header explicitly
+// to exercise printf).
+//
+// Keep this a verbatim copy of the upstream Print.h plus exactly two additions
+// — the <stdarg.h> include and the printf() method below — and re-sync it
+// whenever ArduinoCore-API is bumped.  Upstream base: ArduinoCore-API 1.5.2 (cd91833).
 
 /*
+  Print.h - Base class that provides print() and println()
   Copyright (c) 2016 Arduino LLC.  All right reserved.
 
   This library is free software; you can redistribute it and/or
@@ -16,8 +26,8 @@
 
   This library is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-  See the GNU Lesser General Public License for more details.
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  Lesser General Public License for more details.
 
   You should have received a copy of the GNU Lesser General Public
   License along with this library; if not, write to the Free Software
@@ -66,7 +76,7 @@ class Print
     }
 
     // default to zero, meaning "a single write may block"
-    // should be overriden by subclasses with buffering
+    // should be overridden by subclasses with buffering
     virtual int availableForWrite() { return 0; }
 
     size_t print(const __FlashStringHelper *);
@@ -121,9 +131,13 @@ class Print
         char buf[256];
         int n = vsnprintf(buf, sizeof(buf), format, args);
         va_end(args);
-        if (n > 0) write((const uint8_t *)buf, (size_t)n);
-        return (size_t)(n > 0 ? n : 0);
+        if (n <= 0) return 0;
+        // vsnprintf returns the length it WOULD have written, not what fit;
+        // clamp to the buffer capacity so write() never reads past buf.
+        size_t len = (n < (int)sizeof(buf)) ? (size_t)n : sizeof(buf) - 1;
+        return write((const uint8_t *)buf, len);
     }
 };
 
 }
+using arduino::Print;

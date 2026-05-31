@@ -40,6 +40,26 @@ endif()
 include(Catch)
 catch_discover_tests(ardulinux-tests)
 
+# ─── Print::printf tests ─────────────────────────────────────────────────────
+# printf() lives only in the ArduLinux shadow Print.h (upstream has none).  This
+# separate executable puts cores/ardulinux ahead of cores/arduino/api on the
+# include path so test_printf.cpp compiles against the shadow (the rest of the
+# build is API-first).  It links ardulinux-base for arduino::Print's vtable and
+# out-of-line members; those symbols match the shadow's view because printf is a
+# non-virtual inline addition, so class layout, vtable and typeinfo are unchanged.
+add_executable(ardulinux-printf-tests test_printf.cpp)
+target_include_directories(ardulinux-printf-tests BEFORE PRIVATE
+    ${CMAKE_SOURCE_DIR}/cores/ardulinux        # shadow Print.h (with printf) wins
+    ${CMAKE_SOURCE_DIR}/cores/arduino/api      # String.h / Printable.h it includes
+)
+target_compile_definitions(ardulinux-printf-tests PRIVATE HOST)
+target_link_libraries(ardulinux-printf-tests PRIVATE ardulinux-base Catch2::Catch2WithMain)
+if(CMAKE_BUILD_TYPE STREQUAL "Coverage")
+    target_compile_options(ardulinux-printf-tests PRIVATE --coverage -O0 -g)
+    target_link_options(ardulinux-printf-tests PRIVATE --coverage)
+endif()
+catch_discover_tests(ardulinux-printf-tests)
+
 # ─── LinuxHardwareI2C buffer tests ───────────────────────────────────────────
 # These tests exercise the RX buffer logic and the signed/unsigned underflow
 # guard in LinuxHardwareI2C::read() and ::available().  They do not touch real
