@@ -19,6 +19,7 @@ assert isdir(ARDULINUX_DIR), "ArduLinux core not found: "  + ARDULINUX_DIR
 # copytree, the symlinks track the submodule's live content, so a submodule
 # bump is always picked up with no stale copy.  The overlay is rebuilt only
 # when the set of API headers changes, keeping incremental builds fast.
+# (Assumes symlink support, which is fine for ArduLinux's Linux/macOS hosts.)
 API_DIR = join(env.subst("$PROJECT_BUILD_DIR"), "patched_api")
 wanted  = sorted(name for name in os.listdir(_API_DIR) if name != "Print.h")
 
