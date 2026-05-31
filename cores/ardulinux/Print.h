@@ -1,12 +1,16 @@
 // ArduLinux - Arduino API for Linux
 // Platform-specific Print.h — extends ArduinoCore-API's Print class with
-// printf() so that all Print/Stream subclasses inherit it.
+// printf() so that all Print/Stream subclasses (Serial, File, ...) inherit it.
 //
-// This file shadows ArduinoCore-API/api/Print.h in the include path.
-// Keep it in sync with the upstream when bumping ArduinoCore-API.
-// Upstream base: ArduinoCore-API 1.1.0 (0bb01af)
+// This file shadows ArduinoCore-API/api/Print.h in the include path: the
+// PlatformIO builder overlays the API headers without Print.h, and the CMake
+// build orders cores/ardulinux ahead of the API dir.  Keep it a verbatim copy
+// of the upstream Print.h plus exactly two additions — the <stdarg.h> include
+// and the printf() method below — and re-sync it whenever ArduinoCore-API is
+// bumped.  Upstream base: ArduinoCore-API 1.5.2 (cd91833).
 
 /*
+  Print.h - Base class that provides print() and println()
   Copyright (c) 2016 Arduino LLC.  All right reserved.
 
   This library is free software; you can redistribute it and/or
@@ -16,8 +20,8 @@
 
   This library is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-  See the GNU Lesser General Public License for more details.
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  Lesser General Public License for more details.
 
   You should have received a copy of the GNU Lesser General Public
   License along with this library; if not, write to the Free Software
@@ -66,7 +70,7 @@ class Print
     }
 
     // default to zero, meaning "a single write may block"
-    // should be overriden by subclasses with buffering
+    // should be overridden by subclasses with buffering
     virtual int availableForWrite() { return 0; }
 
     size_t print(const __FlashStringHelper *);
@@ -127,3 +131,4 @@ class Print
 };
 
 }
+using arduino::Print;

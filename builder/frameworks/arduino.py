@@ -1,4 +1,4 @@
-from os.path import join, isdir, exists
+from os.path import join, isdir, exists, islink
 import os
 import shutil
 import subprocess
@@ -13,23 +13,27 @@ ARDULINUX_DIR = join(PLATFORM_DIR, "cores", "ardulinux")
 assert isdir(_API_DIR),      "ArduinoCore-API not found: " + _API_DIR
 assert isdir(ARDULINUX_DIR), "ArduLinux core not found: "  + ARDULINUX_DIR
 
-# Create a patched copy of ArduinoCore-API without Print.h so the include
-# search falls through to our platform Print.h (which adds printf).
-# This avoids forking ArduinoCore-API while keeping Print extensible.
-API_DIR  = join(env.subst("$PROJECT_BUILD_DIR"), "patched_api")
-SENTINEL = join(API_DIR, ".patched_from")
-needs_rebuild = (
-    not exists(API_DIR) or
-    not exists(SENTINEL) or
-    open(SENTINEL).read().strip() != _API_DIR
-)
-if needs_rebuild:
+# Expose ArduinoCore-API's headers to the compiler through a symlink overlay
+# that omits Print.h, so `#include "Print.h"` falls through to our platform
+# Print.h (cores/ardulinux/Print.h, which adds printf).  Unlike a one-shot
+# copytree, the symlinks track the submodule's live content, so a submodule
+# bump is always picked up with no stale copy.  The overlay is rebuilt only
+# when the set of API headers changes, keeping incremental builds fast.
+API_DIR = join(env.subst("$PROJECT_BUILD_DIR"), "patched_api")
+wanted  = sorted(name for name in os.listdir(_API_DIR) if name != "Print.h")
+
+def _overlay_current(d):
+    if not isdir(d):
+        return False
+    entries = sorted(os.listdir(d))
+    return entries == wanted and all(islink(join(d, n)) for n in entries)
+
+if not _overlay_current(API_DIR):
     if exists(API_DIR):
         shutil.rmtree(API_DIR)
-    shutil.copytree(_API_DIR, API_DIR)
-    os.remove(join(API_DIR, "Print.h"))
-    with open(SENTINEL, "w") as f:
-        f.write(_API_DIR)
+    os.makedirs(API_DIR)
+    for name in wanted:
+        os.symlink(join(_API_DIR, name), join(API_DIR, name))
 
 # Detect libgpiod via pkg-config; fall back gracefully if pkg-config is absent.
 try:
@@ -76,7 +80,7 @@ env.BuildSources(
 
 # ─── ArduLinux core sources ───────────────────────────────────────────────────
 # Source list mirrors CMakeLists.txt ardulinux-base — keep in sync.
-# Not included: AsyncUDP.cpp, ArdulinuxPrint.cpp (absent from CMakeLists.txt).
+# Not included: AsyncUDP.cpp (absent from CMakeLists.txt).
 ardulinux_filter = [
     "-<*>",
     "+<HardwareSPIStubs.cpp>",
