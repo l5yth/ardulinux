@@ -87,7 +87,7 @@ TEST_CASE("LinuxHardwareSPI::transfer16 returns 0 (not implemented)", "[spi][lin
 TEST_CASE("LinuxHardwareSPI::beginTransaction/endTransaction do not crash via sim", "[spi][linux]") {
     arduino::LinuxHardwareSPI spi;
     spi.begin();
-    arduino::SPISettings settings(1000000, MSBFIRST, SPI_MODE0);
+    arduino::SPISettings settings(1000000, MSBFIRST, arduino::SPI_MODE0);
     CHECK_NOTHROW(spi.beginTransaction(settings));
     CHECK_NOTHROW(spi.endTransaction());
     spi.end();
