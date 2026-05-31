@@ -62,7 +62,7 @@ TEST_CASE("HardwareSPI::notUsingInterrupt stub does not crash", "[spi][stubs]") 
 
 TEST_CASE("HardwareSPI::beginTransaction stub does not crash", "[spi][stubs]") {
     BareSPI spi;
-    CHECK_NOTHROW(spi.beginTransaction(arduino::SPISettings(1000000, MSBFIRST, SPI_MODE0)));
+    CHECK_NOTHROW(spi.beginTransaction(arduino::SPISettings(1000000, MSBFIRST, arduino::SPI_MODE0)));
 }
 
 TEST_CASE("HardwareSPI::endTransaction stub does not crash", "[spi][stubs]") {
