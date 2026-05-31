@@ -38,7 +38,7 @@ namespace arduino {
  * variables declared in LinuxHardwareI2C.cpp.  Not thread-safe.
  */
 class LinuxHardwareI2C : public HardwareI2C {
-  int i2c_file = 0; ///< File descriptor for the open i2c-dev device
+  int i2c_file = -1; ///< File descriptor; -1 until begin() opens the i2c-dev device (so reads/writes fail fast instead of hitting stdin/stdout)
 
 public:
   /**
