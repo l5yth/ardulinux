@@ -12,6 +12,8 @@ on:
       - "tests/**"
       - "builder/**"
       - "platform.json"
+      - "ArduinoCore-API"
+      - "libraries/WiFi"
   pull_request:
     branches:
       - main
@@ -23,6 +25,8 @@ on:
       - "tests/**"
       - "builder/**"
       - "platform.json"
+      - "ArduinoCore-API"
+      - "libraries/WiFi"
   workflow_dispatch:
 
 jobs:
