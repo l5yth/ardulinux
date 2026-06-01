@@ -6,11 +6,13 @@
   "keywords": ["arduino", "linux", "native", "posix", "gpio", "spi", "i2c", "portduino"],
   "homepage": "https://github.com/l5yth/ardulinux",
   "license": "LGPL-2.1-or-later",
-  "authors": {
-    "name": "l5yth",
-    "url": "https://github.com/l5yth",
-    "maintainer": true
-  },
+  "authors": [
+    {
+      "name": "l5yth",
+      "url": "https://github.com/l5yth",
+      "maintainer": true
+    }
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/l5yth/ardulinux"

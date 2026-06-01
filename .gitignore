@@ -14,3 +14,9 @@ tests/gpio
 
 # Coverage
 coverage.info
+
+# Local PlatformIO toolchain venv
+.venv/
+
+# Local Claude Code config
+.claude/
