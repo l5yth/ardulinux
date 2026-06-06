@@ -3,6 +3,7 @@
 //
 
 #include "Arduino.h"
+#include <Wire.h>
 
 #define TEST_PIN 7
 

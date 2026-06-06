@@ -1,3 +1,6 @@
 #pragma once
+#ifdef ARDULINUX_HARDWARE
 #include "linux/LinuxHardwareI2C.h"
-// FIXME - move wire code here?
+#else
+#include "simulated/SimHardwareI2C.h"
+#endif

@@ -1,6 +1,6 @@
 {
   "name": "ardulinux",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "title": "ArduLinux",
   "description": "ArduLinux - Arduino API for Linux",
   "keywords": ["arduino", "linux", "native", "posix", "gpio", "spi", "i2c", "portduino"],
