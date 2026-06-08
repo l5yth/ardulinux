@@ -46,6 +46,7 @@ target_include_directories(ardulinux-base PUBLIC
         cores/arduino/api
         cores/ardulinux
         cores/ardulinux/FS
+        libraries/Wire/src
 )
 
 # ArduinoCore-API's Common.h re-declares atexit() without noexcept, which conflicts
