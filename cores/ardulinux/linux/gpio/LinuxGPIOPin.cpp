@@ -154,9 +154,12 @@ static struct gpiod_chip *find_chip_by_label(const char *chipLabel)
 				const char *label = gpiod_chip_label(c);
 				bool hit = label && strcmp(label, chipLabel) == 0;
 #endif
-				if (hit)
+				if (hit) {
 					match = c;
-				else
+					log(SysGPIO, LogDebug,
+					    "find_chip_by_label(%s): scan matched %s",
+					    chipLabel, entries[i]->d_name);
+				} else
 					gpiod_chip_close(c);
 			}
 		}
@@ -194,6 +197,7 @@ gpiod_line *LinuxGPIOPin::getLine(const char *chipLabel, const char *linuxPinNam
 	gpiod_line_config_free(line_cfg);
 	gpiod_line_settings_free(settings);
 	gpiod_chip_close(chip);
+	chip = NULL;  // prevent double-close in ~LinuxGPIOPin()
 	return line;
 #else
 	auto line = gpiod_chip_find_line(chip, linuxPinName);
@@ -235,6 +239,7 @@ gpiod_line *LinuxGPIOPin::getLine(const char *chipLabel, const int linuxPinNum) 
 	gpiod_line_config_free(line_cfg);
 	gpiod_line_settings_free(settings);
 	gpiod_chip_close(chip);
+	chip = NULL;  // prevent double-close in ~LinuxGPIOPin()
 	return line;
 #else
 	auto line = gpiod_chip_get_line(chip, linuxPinNum);
