@@ -219,9 +219,9 @@ private:
         if (mode != OUTPUT)
         {
             auto newState = readPinHardware();
-            if(!silent)
-                log(SysGPIO, LogDebug, "refreshState(%s, %d)", getName(), newState);
             auto oldState = status;
+            if(!silent && newState != oldState)
+                log(SysGPIO, LogDebug, "refreshState(%s, %d -> %d)", getName(), oldState, newState);
             status = newState;  // Update cached value before calling ISR
             callISR(oldState, newState);
         }
