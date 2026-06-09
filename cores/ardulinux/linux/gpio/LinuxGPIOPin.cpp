@@ -123,17 +123,59 @@ static struct gpiod_chip *chip_open_by_name(const char *name)
 	return chip;
 }
 
+// Open the gpiod chip whose label matches `chipLabel`.  First tries
+// "/dev/<chipLabel>" as a device basename (covers the gpiochip0 case);
+// falls back to scanning /dev/ and comparing each chip's reported label
+// (covers passing a kernel label like "pinctrl-rp1" or "pinctrl-bcm2835").
+// Caller owns the returned chip; returns NULL if no chip matches.
+static struct gpiod_chip *find_chip_by_label(const char *chipLabel)
+{
+	std::string path = "/dev/";
+	path += chipLabel;
+	if (access(path.c_str(), R_OK) == 0)
+		return chip_open_by_name(chipLabel);
+
+	struct dirent **entries;
+	int num_chips = scandir("/dev/", &entries, chip_dir_filter, alphasort);
+	if (num_chips <= 0)
+		return NULL;
+
+	struct gpiod_chip *match = NULL;
+	for (int i = 0; i < num_chips; i++) {
+		if (!match) {
+			struct gpiod_chip *c = chip_open_by_name(entries[i]->d_name);
+			if (c) {
+#if GPIOD_V == 2
+				struct gpiod_chip_info *info = gpiod_chip_get_info(c);
+				const char *label = info ? gpiod_chip_info_get_label(info) : NULL;
+				bool hit = label && strcmp(label, chipLabel) == 0;
+				if (info) gpiod_chip_info_free(info);
+#else
+				const char *label = gpiod_chip_label(c);
+				bool hit = label && strcmp(label, chipLabel) == 0;
+#endif
+				if (hit) {
+					match = c;
+					log(SysGPIO, LogDebug,
+					    "find_chip_by_label(%s): scan matched %s",
+					    chipLabel, entries[i]->d_name);
+				} else
+					gpiod_chip_close(c);
+			}
+		}
+		free(entries[i]);
+	}
+	free(entries);
+	return match;
+}
+
 /**
  * Try to find the specified linux gpio line, throw exception if not found
  */
 gpiod_line *LinuxGPIOPin::getLine(const char *chipLabel, const char *linuxPinName) {
-	std::string path = "/dev/";
-	path += chipLabel;
-  if (access(path.c_str(), R_OK) == 0) {
-	chip = chip_open_by_name(chipLabel);
-	if (!chip) {
-		throw std::invalid_argument("Error, cannot open GPIO chip");
-	}
+  chip = find_chip_by_label(chipLabel);
+  if (!chip)
+    throw std::invalid_argument("GPIO chip not found");
 
 #if GPIOD_V == 2
 	struct gpiod_line_settings *settings;
@@ -155,9 +197,8 @@ gpiod_line *LinuxGPIOPin::getLine(const char *chipLabel, const char *linuxPinNam
 	gpiod_line_config_free(line_cfg);
 	gpiod_line_settings_free(settings);
 	gpiod_chip_close(chip);
+	chip = NULL;  // prevent double-close in ~LinuxGPIOPin()
 	return line;
-
-
 #else
 	auto line = gpiod_chip_find_line(chip, linuxPinName);
 	struct gpiod_line_request_config request = {
@@ -168,55 +209,16 @@ gpiod_line *LinuxGPIOPin::getLine(const char *chipLabel, const char *linuxPinNam
 	}
 	return line;
 #endif
-
-  }
-#if GPIOD_V == 1
-  struct dirent **entries;
-  int num_chips = scandir("/dev/", &entries, chip_dir_filter, alphasort);
-  assert(num_chips > 0); // FIXME, throw exception
-  log(SysGPIO, LogDebug, "getLine(%s, %s)", chipLabel, linuxPinName);
-  for (int i = 0; i < num_chips; i++) {
-    chip = chip_open_by_name(entries[i]->d_name);
-    free(entries[i]);
-    if (!chip) {
-      if (errno == EACCES)
-        continue; // skip chips we don't have access to
-
-      assert(0); // die_perror("unable to open %s", entries[i]->d_name);
-    } else {
-      auto label = gpiod_chip_label(chip);
-      if (strcmp(label, chipLabel) == 0) {
-        auto line = gpiod_chip_find_line(chip, linuxPinName);
-
-        struct gpiod_line_request_config request = {
-            consumer, GPIOD_LINE_REQUEST_DIRECTION_AS_IS, 0};
-        auto result = gpiod_line_request(line, &request, 0);
-        for (int j = i + 1; j < num_chips; j++)
-          free(entries[j]);
-        free(entries);
-        if(result != 0) {
-		    throw std::invalid_argument("Error, cannot open GPIO chip");
-		}
-        return line;
-      }
-    }
-  }
-  free(entries);
-#endif
-  throw std::invalid_argument("GPIO line not found");
 }
 
 /**
  * Try to find the specified linux gpio line, throw exception if not found
  */
 gpiod_line *LinuxGPIOPin::getLine(const char *chipLabel, const int linuxPinNum) {
-	std::string path = "/dev/";
-	path += chipLabel;
-  if (access(path.c_str(), R_OK) == 0) {
-	chip = chip_open_by_name(chipLabel);
-	if (!chip) {
-		throw std::invalid_argument("Error, cannot open GPIO chip");
-	}
+  chip = find_chip_by_label(chipLabel);
+  if (!chip)
+    throw std::invalid_argument("GPIO chip not found");
+
 #if GPIOD_V == 2
 	struct gpiod_line_settings *settings;
 	struct gpiod_line_config *line_cfg;
@@ -237,6 +239,7 @@ gpiod_line *LinuxGPIOPin::getLine(const char *chipLabel, const int linuxPinNum) 
 	gpiod_line_config_free(line_cfg);
 	gpiod_line_settings_free(settings);
 	gpiod_chip_close(chip);
+	chip = NULL;  // prevent double-close in ~LinuxGPIOPin()
 	return line;
 #else
 	auto line = gpiod_chip_get_line(chip, linuxPinNum);
@@ -249,41 +252,6 @@ gpiod_line *LinuxGPIOPin::getLine(const char *chipLabel, const int linuxPinNum) 
 	}
 	return line;
 #endif
-  }
-#if GPIOD_V == 1
-  struct dirent **entries;
-  int num_chips = scandir("/dev/", &entries, chip_dir_filter, alphasort);
-  assert(num_chips > 0); // FIXME, throw exception
-  log(SysGPIO, LogDebug, "getLine(%s, %d)", chipLabel, linuxPinNum);
-  for (int i = 0; i < num_chips; i++) {
-    chip = chip_open_by_name(entries[i]->d_name);
-    free(entries[i]);
-    if (!chip) {
-      if (errno == EACCES)
-        continue; // skip chips we don't have access to
-
-      assert(0); // die_perror("unable to open %s", entries[i]->d_name);
-    } else {
-      auto label = gpiod_chip_label(chip);
-      if (strcmp(label, chipLabel) == 0) {
-        auto line = gpiod_chip_get_line(chip, linuxPinNum);
-
-        struct gpiod_line_request_config request = {
-            consumer, GPIOD_LINE_REQUEST_DIRECTION_AS_IS, 0};
-        auto result = gpiod_line_request(line, &request, 0);
-        for (int j = i + 1; j < num_chips; j++)
-          free(entries[j]);
-        free(entries);
-        if(result != 0) {
-		    throw std::invalid_argument("Error, cannot open GPIO chip");
-		}
-        return line;
-      }
-    }
-  }
-  free(entries);
-#endif
-  throw std::invalid_argument("GPIO line not found");
 }
 
 /**
