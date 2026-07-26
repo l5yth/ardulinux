@@ -37,9 +37,13 @@ if not _overlay_current(API_DIR):
         os.symlink(join(_API_DIR, name), join(API_DIR, name))
 
 # Detect libgpiod via pkg-config; fall back gracefully if pkg-config is absent.
+# Honor a caller-supplied $PKG_CONFIG so cross builds resolve libgpiod against
+# the target sysroot rather than the build host (otherwise the simulated GPIO/I2C
+# drivers get compiled in and the daemon can't drive real hardware).
+_pkg_config = os.environ.get("PKG_CONFIG", "pkg-config")
 try:
     has_libgpiod = subprocess.call(
-        ["pkg-config", "--exists", "libgpiod"],
+        [_pkg_config, "--exists", "libgpiod"],
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
     ) == 0
@@ -57,7 +61,7 @@ cpppath    = [
 
 if has_libgpiod:
     cppdefines.append("ARDULINUX_HARDWARE")
-    raw = subprocess.check_output(["pkg-config", "--cflags", "libgpiod"]).decode().split()
+    raw = subprocess.check_output([_pkg_config, "--cflags", "libgpiod"]).decode().split()
     cpppath += [f[2:] for f in raw if f.startswith("-I")]
 
 env.Append(CPPPATH=cpppath, CPPDEFINES=cppdefines)
