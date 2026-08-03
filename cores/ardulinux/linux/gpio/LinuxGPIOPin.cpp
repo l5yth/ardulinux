@@ -198,6 +198,16 @@ gpiod_line *LinuxGPIOPin::getLine(const char *chipLabel, const char *linuxPinNam
 	gpiod_line_settings_free(settings);
 	gpiod_chip_close(chip);
 	chip = NULL;  // prevent double-close in ~LinuxGPIOPin()
+	// gpiod_chip_request_lines() returns NULL when the line cannot be acquired
+	// (e.g. already claimed by another process or a kernel driver). Fail loudly
+	// here instead of returning NULL and asserting later in a reconfigure call.
+	if (!line) {
+		char msg[128];
+		snprintf(msg, sizeof(msg),
+			"Error, cannot acquire GPIO line '%s' on %s (already in use?)",
+			linuxPinName ? linuxPinName : "?", chipLabel ? chipLabel : "?");
+		throw std::invalid_argument(msg);
+	}
 	return line;
 #else
 	auto line = gpiod_chip_find_line(chip, linuxPinName);
@@ -240,6 +250,16 @@ gpiod_line *LinuxGPIOPin::getLine(const char *chipLabel, const int linuxPinNum) 
 	gpiod_line_settings_free(settings);
 	gpiod_chip_close(chip);
 	chip = NULL;  // prevent double-close in ~LinuxGPIOPin()
+	// gpiod_chip_request_lines() returns NULL when the line cannot be acquired
+	// (e.g. already claimed by another process or a kernel driver). Fail loudly
+	// here instead of returning NULL and asserting later in a reconfigure call.
+	if (!line) {
+		char msg[128];
+		snprintf(msg, sizeof(msg),
+			"Error, cannot acquire GPIO line %d on %s (already in use?)",
+			linuxPinNum, chipLabel ? chipLabel : "?");
+		throw std::invalid_argument(msg);
+	}
 	return line;
 #else
 	auto line = gpiod_chip_get_line(chip, linuxPinNum);
