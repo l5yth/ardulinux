@@ -25,8 +25,13 @@
 #include <unistd.h> // write(), read(), close()
 #include <string>
 #include <sys/ioctl.h>
+#include <sys/socket.h> // socket(), bind(), listen(), accept()
+#include <sys/stat.h>   // mkdir(), chmod(), umask()
+#include <sys/types.h>
+#include <sys/un.h>     // sockaddr_un
 
 #include <stdio.h>
+#include <stdlib.h> // getenv()
 
 /** Module-level termios structure shared across begin() calls. */
 struct termios tty;
@@ -260,46 +265,167 @@ namespace arduino {
 
 
 
-    // --- SimSerial: stdout-backed simulated serial (used as the console) ---
+    // --- SimSerial: stdout console + Unix-socket input (the console port) ---
 
-    /** No-op: simulated port requires no hardware setup. */
-    void SimSerial::begin(unsigned long baudrate, uint16_t config) {}
+    /** Resolve the console socket path.*/
+    static std::string resolveConsolePath() {
+        const char *env = getenv("ARDULINUX_CONSOLE_SOCKET");
+        if (env && *env) return std::string(env);
 
-    /** No-op: no file descriptor to close. */
-    void SimSerial::end() {}
+        const char *xdg = getenv("XDG_RUNTIME_DIR");
+        std::string dir = (xdg && *xdg)
+            ? std::string(xdg) + "/ardulinux"
+            : std::string("/tmp/ardulinux-") + std::to_string((unsigned)getuid());
+        mkdir(dir.c_str(), 0700);  // best effort; bind() reports real failures
+        return dir + "/console.sock";
+    }
 
-    /** Always returns 0: stdin is not monitored. */
+    SimSerial::SimSerial() {
+        setvbuf(stdout, nullptr, _IOLBF, 0);
+    }
+
+    /** Open the listening console socket.*/
+    void SimSerial::begin(unsigned long baudrate, uint16_t config) {
+        if (listen_fd != -1) return;  // already open
+
+        std::string path = resolveConsolePath();
+
+        sockaddr_un addr{};
+        if (path.size() >= sizeof(addr.sun_path)) {
+            fprintf(stderr, "ardulinux: console socket path too long: %s\n",
+                    path.c_str());
+            return;
+        }
+
+        int fd = socket(AF_UNIX, SOCK_STREAM, 0);
+        if (fd < 0) {
+            fprintf(stderr, "ardulinux: console socket() failed: %s\n",
+                    strerror(errno));
+            return;
+        }
+        fcntl(fd, F_SETFL, fcntl(fd, F_GETFL, 0) | O_NONBLOCK);
+
+        addr.sun_family = AF_UNIX;
+        strncpy(addr.sun_path, path.c_str(), sizeof(addr.sun_path) - 1);
+
+        unlink(path.c_str());  // clear a stale socket from a prior run
+
+        // Create the socket node mode 0600 so only the owner can connect;
+        // connecting is equivalent to a privileged local serial console.
+        mode_t old_umask = umask(0177);
+        int rc = bind(fd, (sockaddr *)&addr, sizeof(addr));
+        umask(old_umask);
+        if (rc != 0) {
+            fprintf(stderr, "ardulinux: console bind(%s) failed: %s\n",
+                    path.c_str(), strerror(errno));
+            close(fd);
+            return;
+        }
+        chmod(path.c_str(), 0600);  // belt-and-suspenders vs. a lax umask
+
+        if (listen(fd, 1) != 0) {
+            fprintf(stderr, "ardulinux: console listen(%s) failed: %s\n",
+                    path.c_str(), strerror(errno));
+            close(fd);
+            unlink(path.c_str());
+            return;
+        }
+
+        listen_fd = fd;
+        sock_path = path;
+    }
+
+    /** Accept a pending client if none is connected (non-blocking). */
+    void SimSerial::acceptClient() {
+        if (listen_fd == -1 || client_fd != -1) return;
+        int fd = accept(listen_fd, nullptr, nullptr);
+        if (fd < 0) return;  // EAGAIN: no client waiting
+        fcntl(fd, F_SETFL, fcntl(fd, F_GETFL, 0) | O_NONBLOCK);
+        client_fd = fd;
+    }
+
+    /** Drop the client if the peer has closed.*/
+    void SimSerial::reapClosedClient() {
+        if (client_fd == -1) return;
+        char b;
+        ssize_t r = recv(client_fd, &b, 1, MSG_PEEK | MSG_DONTWAIT);
+        if (r == 0) {  // orderly peer close
+            close(client_fd);
+            client_fd = -1;
+        }
+    }
+
+    /** Close the client + listening socket and unlink the socket path. */
+    void SimSerial::end() {
+        if (client_fd != -1) { close(client_fd); client_fd = -1; }
+        if (listen_fd != -1) { close(listen_fd); listen_fd = -1; }
+        if (!sock_path.empty()) { unlink(sock_path.c_str()); sock_path.clear(); }
+        peeked = -1;
+    }
+
+    SimSerial::~SimSerial() { end(); }
+
+    /** Bytes available from the connected console client (0 if none). */
     int SimSerial::available(void) {
-        return 0;
+        acceptClient();
+        reapClosedClient();              // drop a client that has hung up ...
+        if (client_fd == -1) acceptClient();  // ... and pick up the next one
+        int n = (peeked >= 0) ? 1 : 0;
+        if (client_fd != -1) {
+            int q = 0;
+            if (ioctl(client_fd, FIONREAD, &q) == 0 && q > 0) n += q;
+        }
+        return n;
     }
 
-    /** Always returns -1: peek is not supported. */
+    /** Peek one byte from the console client without consuming it. */
     int SimSerial::peek(void) {
-        return -1;
+        if (peeked < 0) peeked = read();
+        return peeked;
     }
 
-    /** Always returns -1: reading from stdin is not supported. */
+    /** Read one byte from the console client, or -1 if none. */
     int SimSerial::read(void) {
-        return -1;
+        if (peeked >= 0) { int c = peeked; peeked = -1; return c; }
+        acceptClient();
+        if (client_fd == -1) return -1;
+        unsigned char b;
+        ssize_t n = ::read(client_fd, &b, 1);
+        if (n == 1) return (b == '\n') ? '\r' : b;
+        if (n == 0) {  // client disconnected
+            close(client_fd);
+            client_fd = -1;
+        }
+        return -1;  // n < 0 (EAGAIN) or disconnect
     }
 
-    /** No-op: stdout is unbuffered at this level. */
-    void SimSerial::flush(void) {}
+    /** Flush stdout. */
+    void SimSerial::flush(void) { fflush(stdout); }
 
     /**
-     * Write one byte to stdout.
+     * Write one byte to stdout, mirroring to the console client if connected.
      *
-     * Routes Arduino Serial.print/write output to the terminal so that log
-     * messages (via logging.cpp) appear on the console.
+     * Routes Arduino Serial.print/write output to the terminal so log messages
+     * (via logging.cpp) reach the console / journald, and echoes them plus CLI
+     * replies to a connected socket client.
      *
      * @return Always 1.
      */
     size_t SimSerial::write(uint8_t c) {
         putchar(c);
+        if (client_fd != -1) {
+            // MSG_NOSIGNAL: a write to a hung-up peer must not raise SIGPIPE
+            // (its default disposition would terminate the daemon).
+            if (send(client_fd, &c, 1, MSG_NOSIGNAL) < 0 &&
+                (errno == EPIPE || errno == ECONNRESET)) {
+                close(client_fd);
+                client_fd = -1;
+            }
+        }
         return 1;
     }
 
-    /** Always returns true: the simulated port is always ready. */
+    /** Always returns true: the console port is always ready. */
     SimSerial::operator bool() {
         return true;
     }

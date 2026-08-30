@@ -106,30 +106,55 @@ namespace arduino {
     };
 
 /**
- * Simulated serial port that routes output to stdout.
+ * Console serial port: output to stdout, input from a Unix-domain socket.
  *
- * Used as the Serial (console) instance on Linux.  write() calls putchar()
- * so log output appears on the terminal.  read() always returns -1 (no
- * input from stdin is supported).
+ * Used as the Serial (console) instance on Linux.  write() routes bytes to
+ * stdout so log output appears on the terminal / journald, and — when a
+ * client is connected — mirrors them to the console socket.
+ *
+ * begin() opens a listening AF_UNIX socket so a local client can send
+ * commands to a running daemon (e.g. `socat - UNIX-CONNECT:<path>`).  The
+ * path is `$ARDULINUX_CONSOLE_SOCKET` when set, otherwise
+ * `$XDG_RUNTIME_DIR/ardulinux/console.sock` (falling back to
+ * `/tmp/ardulinux-<uid>/console.sock`).  The socket is created mode 0600 in
+ * a 0700 directory: connecting grants the same privilege as a local serial
+ * console, so access is gated by filesystem permissions.  If the socket
+ * cannot be created, begin() logs a warning and continues (stdout output
+ * still works).
  */
     class SimSerial : public HardwareSerial {
+        int listen_fd = -1;    ///< Listening console socket; -1 when disabled
+        int client_fd = -1;    ///< Connected client; -1 when none
+        int peeked = -1;       ///< One-byte pushback for peek(); -1 when empty
+        std::string sock_path; ///< Bound socket path, unlinked on end()
+
+        /** Accept a pending client if none is connected (non-blocking). */
+        void acceptClient();
+        /** Drop the client if the peer has closed (detected via MSG_PEEK). */
+        void reapClosedClient();
+
     public:
-        /** No-op; the simulated port is always "open". */
+        /** Line-buffer stdout so log lines reach journald/terminal promptly. */
+        SimSerial();
+        /** Close the client, listening socket, and unlink the socket path. */
+        ~SimSerial();
+
+        /** Open the console socket. */
         virtual void begin(unsigned long baudrate) { begin(baudrate, SERIAL_8N1); }
-        /** No-op. */
+        /** Open the console socket. */
         virtual void begin(unsigned long baudrate, uint16_t config);
-        /** No-op. */
+        /** Close the client + listening socket and unlink the socket path. */
         virtual void end();
-        /** Always returns 0 (no input available). */
+        /** Bytes available from the connected console client (0 if none). */
         virtual int available(void);
-        /** Always returns -1. */
+        /** Peek one byte from the console client without consuming it. */
         virtual int peek(void);
-        /** Always returns -1. */
+        /** Read one byte from the console client, or -1 if none. */
         virtual int read(void);
-        /** No-op. */
+        /** Flush stdout. */
         virtual void flush(void);
         /**
-         * Write one byte to stdout.
+         * Write one byte to stdout (and to the console client if connected).
          *
          * @return Always 1.
          */
