@@ -114,6 +114,12 @@ namespace arduino {
  */
     class SimSerial : public HardwareSerial {
     public:
+        /**
+         * Line-buffer stdout (once, at static init) so log lines reach the
+         * terminal / journald promptly, without needing an external
+         * `stdbuf -oL` wrapper around the process.
+         */
+        SimSerial();
         /** No-op; the simulated port is always "open". */
         virtual void begin(unsigned long baudrate) { begin(baudrate, SERIAL_8N1); }
         /** No-op. */
