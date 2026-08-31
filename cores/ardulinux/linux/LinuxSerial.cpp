@@ -302,8 +302,18 @@ namespace arduino {
         return -1;
     }
 
-    /** No-op: stdout is unbuffered at this level. */
-    void SimSerial::flush(void) {}
+    /**
+     * Push any buffered stdout to the underlying fd.
+     *
+     * stdout is line-buffered (see the constructor), so a completed log line
+     * leaves on its own newline.  A partial line -- Serial.print() with no
+     * trailing newline, e.g. a prompt or a progress counter -- sits in the
+     * buffer until the next newline or exit.  Arduino's flush() contract is
+     * "wait for outgoing data to be transmitted", so honour it here.
+     */
+    void SimSerial::flush(void) {
+        fflush(stdout);
+    }
 
     /**
      * Write one byte to stdout.
