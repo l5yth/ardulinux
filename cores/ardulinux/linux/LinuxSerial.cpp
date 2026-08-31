@@ -262,6 +262,25 @@ namespace arduino {
 
     // --- SimSerial: stdout-backed simulated serial (used as the console) ---
 
+    /**
+     * Line-buffer stdout the first time a SimSerial is constructed.
+     *
+     * The global `Serial` instance is constructed at static-init, before any
+     * output, so this runs before the first write.  With line buffering, each
+     * log line is flushed on its terminating newline, so `Serial.print(...)`
+     * output reaches the terminal / journald promptly without wrapping the
+     * process in `stdbuf -oL`.  Guarded to run only once: setvbuf() is undefined
+     * once I/O has occurred, and additional SimSerial instances may be created
+     * (e.g. in tests) after output has already started.
+     */
+    SimSerial::SimSerial() {
+        static bool configured = [] {
+            setvbuf(stdout, nullptr, _IOLBF, 0);
+            return true;
+        }();
+        (void)configured;
+    }
+
     /** No-op: simulated port requires no hardware setup. */
     void SimSerial::begin(unsigned long baudrate, uint16_t config) {}
 
