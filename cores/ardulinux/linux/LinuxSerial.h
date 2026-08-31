@@ -132,7 +132,7 @@ namespace arduino {
         virtual int peek(void);
         /** Always returns -1. */
         virtual int read(void);
-        /** No-op. */
+        /** Push buffered stdout out now (flushes partial, newline-less lines). */
         virtual void flush(void);
         /**
          * Write one byte to stdout.
