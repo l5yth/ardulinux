@@ -2,6 +2,7 @@
 
 [![Build](https://github.com/l5yth/ardulinux/actions/workflows/build.yml/badge.svg)](https://github.com/l5yth/ardulinux/actions/workflows/build.yml)
 [![Coverage](https://codecov.io/gh/l5yth/ardulinux/branch/main/graph/badge.svg)](https://codecov.io/gh/l5yth/ardulinux)
+[![PlatformIO Registry](https://badges.registry.platformio.org/packages/l5y/platform/ardulinux.svg)](https://registry.platformio.org/platforms/l5y/ardulinux)
 
 ArduLinux is a continuation of [portduino](https://github.com/geeksville/framework-portduino) and implements the Arduino API as a Linux user-space library, allowing firmware written for embedded targets (nRF52, ESP32, AVR, etc.) to build and run on Linux without modification. Applications get access to real hardware - GPIO via libgpiod, SPI via spidev, I2C via i2c-dev, Serial via POSIX file descriptors - or fully simulated devices for CI and development.
 
